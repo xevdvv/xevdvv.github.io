@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+    <style>
+        :root {
+            --bg: #111827;
+            --panel: #1f2937;
+            --text: #f9fafb;
+            --accent: #ff2d55;
+            --accent-dark: #d91b45;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #111827, #1f2937);
+            color: var(--text);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .background-symbols {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .symbol {
+            position: absolute;
+            opacity: 0.28;
+            animation: float 10s infinite ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            font-weight: bold;
+            text-shadow: 0 0 12px rgba(255,255,255,0.12);
+            user-select: none;
+        }
+
+        .green { color: #22c55e; }
+        .pink { color: #ec4899; }
+        .red { color: #ef4444; }
+        .blue { color: #3b82f6; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+            25% { transform: translateY(-28px) translateX(12px) rotate(5deg); }
+            50% { transform: translateY(-48px) translateX(-14px) rotate(-6deg); }
+            75% { transform: translateY(-18px) translateX(10px) rotate(4deg); }
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 1rem;
+        }
+
+        .char {
+            display: inline-block;
+            opacity: 0;
+            animation: drop 0.6s ease-out forwards;
+        }
+
+        .char.space {
+            width: 0.35em;
+        }
+
+        @keyframes drop {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tiktok-link {
+            display: inline-block;
+            margin-top: 1rem;
+            text-decoration: none;
+        }
+
+        .tiktok-button {
+            border: none;
+            border-radius: 999px;
+            padding: 0.9rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 20px rgba(255, 45, 85, 0.35);
+        }
+
+        .tiktok-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(255, 45, 85, 0.5);
+        }
+
+        .tiktok-button:focus-visible {
+            outline: 3px solid #fff;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-symbols" id="symbolsContainer"></div>
+
+    <main class="container">
+        <h1 id="welcome"></h1>
+
+        <a
+            class="tiktok-link"
+            href="https://www.tiktok.com/@_.x.e._v._"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Follow my TikTok"
+        >
+            <button type="button" class="tiktok-button">Follow my TikTok!</button>
+        </a>
+
+        <a class="tiktok-link" href="index.html" aria-label="Back to the main page">
+            <button type="button" class="tiktok-button">Back</button>
+        </a>
+    </main>
+
+    <script>
+        const symbolsContainer = document.getElementById("symbolsContainer");
+        const symbolTypes = ["triangle", "square", "circle", "psquare", "pscircle", "psx"];
+        const psSymbols = {
+            psquare: "□",
+            pscircle: "○",
+            psx: "✕",
+            triangle: "△",
+            square: "■",
+            circle: "●"
+        };
+        const colors = ["green", "pink", "red", "blue"];
+        const numberOfSymbols = 18;
+
+        for (let i = 0; i < numberOfSymbols; i++) {
+            const symbol = document.createElement("div");
+            const randomType = symbolTypes[Math.floor(Math.random() * symbolTypes.length)];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+            symbol.className = `symbol ${randomColor}`;
+            symbol.textContent = psSymbols[randomType];
+            symbol.style.left = Math.random() * 100 + "%";
+            symbol.style.top = Math.random() * 100 + "%";
+            symbol.style.animationDelay = Math.random() * 4 + "s";
+            symbol.style.animationDuration = (Math.random() * 5 + 8) + "s";
+            symbol.style.fontSize = (Math.random() * 16 + 24) + "px";
+
+            symbolsContainer.appendChild(symbol);
+        }
+
+        const text = "Home";
+        const welcomeElement = document.getElementById("welcome");
+
+        text.split("").forEach((char, index) => {
+            const span = document.createElement("span");
+            span.textContent = char === " " ? "\u00A0" : char;
+            span.className = "char" + (char === " " ? " space" : "");
+            span.style.animationDelay = `${index * 0.05}s`;
+            welcomeElement.appendChild(span);
+        });
+    </script>
+</body>
+</html>
