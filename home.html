@@ -1,69 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Home</title>
     <style>
-        :root {
-            --accent: #ff2d55;
-            --accent-dark: #d91b45;
-        }
+      :root {
+        --bg-1: #111827;
+        --bg-2: #1f2937;
+        --panel: rgba(255, 255, 255, 0.06);
+        --panel-border: rgba(255, 255, 255, 0.12);
+        --text: #f9fafb;
+        --muted: #d1d5db;
+        --accent: #ff2d55;
+        --accent-dark: #d91b45;
+      }
 
-        * {
-            box-sizing: border-box;
-        }
+      * {
+        box-sizing: border-box;
+      }
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: Arial, Helvetica, sans-serif;
-            background: linear-gradient(135deg, #111827, #1f2937);
-            color: #f9fafb;
-            position: relative;
-            overflow: hidden;
-        }
+      html {
+        scroll-behavior: smooth;
+      }
 
-        .back-button-container {
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            z-index: 100;
-        }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+        color: var(--text);
+      }
 
-        .back-link {
-            text-decoration: none;
-        }
+      .page-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5rem 1.5rem 2rem;
+      }
 
-        .back-button {
-            border: none;
-            border-radius: 999px;
-            padding: 0.9rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 700;
-            color: white;
-            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 8px 20px rgba(255, 45, 85, 0.35);
-        }
+      .hero {
+        width: min(900px, 100%);
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 24px;
+        padding: clamp(1.5rem, 3vw, 3rem);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(8px);
+      }
 
-        .back-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 24px rgba(255, 45, 85, 0.5);
-        }
+      .topbar {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: 2rem;
+      }
 
-        .back-button:focus-visible {
-            outline: 3px solid #fff;
-            outline-offset: 2px;
-        }
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #fff;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+        border-radius: 999px;
+        padding: 0.85rem 1.4rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 8px 20px rgba(255, 45, 85, 0.35);
+      }
+
+      .back-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(255, 45, 85, 0.5);
+      }
+
+      .back-link:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 3px;
+      }
+
+      .content {
+        display: grid;
+        gap: 1rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.2rem, 5vw, 4rem);
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 1.05rem;
+        line-height: 1.7;
+        max-width: 60ch;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .primary-btn,
+      .secondary-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        border-radius: 999px;
+        padding: 0.9rem 1.4rem;
+        font-weight: 700;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+
+      .primary-btn {
+        background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+        color: #fff;
+      }
+
+      .secondary-btn {
+        border: 1px solid var(--panel-border);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .primary-btn:hover,
+      .secondary-btn:hover {
+        transform: translateY(-1px);
+      }
     </style>
-</head>
-<body>
-    <div class="back-button-container">
-        <a class="back-link" href="index.html" aria-label="Back to the main page">
-            <button type="button" class="back-button">Back</button>
-        </a>
-    </div>
-</body>
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="home-title">
+        <div class="topbar">
+          <a class="back-link" href="index.html" aria-label="Back to the main page">Back</a>
+        </div>
+
+        <div class="content">
+          <h1 id="home-title">Welcome Home</h1>
+          <p>
+            This is a clean starting point for your personal site. Add your introduction,
+            projects, and links here to make it feel like a real landing page.
+          </p>
+
+          <div class="cta-row">
+            <a class="primary-btn" href="index.html">Main Page</a>
+            <a class="secondary-btn" href="#about">Learn More</a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
 </html>
