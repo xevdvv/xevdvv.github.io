@@ -37,6 +37,23 @@
             margin-bottom: 1rem;
         }
 
+        .char {
+            display: inline-block;
+            opacity: 0;
+            animation: drop 0.6s ease-out forwards;
+        }
+
+        @keyframes drop {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .tiktok-link {
             display: inline-block;
             margin-top: 1rem;
@@ -69,7 +86,7 @@
 </head>
 <body>
     <main class="container">
-        <h1>Hello! Welcome to my website.</h1>
+        <h1 id="welcome"></h1>
 
         <a
             class="tiktok-link"
@@ -81,5 +98,18 @@
             <button type="button" class="tiktok-button">Follow my TikTok!</button>
         </a>
     </main>
+
+    <script>
+        const text = "Hello! Welcome to my website.";
+        const welcomeElement = document.getElementById("welcome");
+
+        text.split("").forEach((char, index) => {
+            const span = document.createElement("span");
+            span.textContent = char;
+            span.className = "char";
+            span.style.animationDelay = `${index * 0.05}s`;
+            welcomeElement.appendChild(span);
+        });
+    </script>
 </body>
 </html>
