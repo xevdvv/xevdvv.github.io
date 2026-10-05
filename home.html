@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home</title>
+    <title>Attachments</title>
     <style>
       :root {
         --bg-1: #111827;
@@ -91,12 +91,11 @@
         line-height: 1.1;
       }
 
-      p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 1.05rem;
-        line-height: 1.7;
-        max-width: 60ch;
+      .image-area {
+        min-height: 220px;
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.02);
       }
 
       .cta-row {
@@ -132,11 +131,8 @@
         </div>
 
         <div class="content">
-          <h1 id="home-title">Welcome Home</h1>
-          <p>
-            This is a clean starting point for your personal site. Add your introduction,
-            projects, and links here to make it feel like a real landing page.
-          </p>
+          <h1 id="home-title">Attachments</h1>
+          <div class="image-area" aria-label="Image gallery"></div>
 
           <div class="cta-row">
             <a class="primary-btn" href="https://www.tiktok.com/@_.x.e._v._" target="_blank" rel="noopener noreferrer">My Tiktok</a>
