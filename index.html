@@ -43,6 +43,10 @@
             animation: drop 0.6s ease-out forwards;
         }
 
+        .char.space {
+            width: 0.35em;
+        }
+
         @keyframes drop {
             0% {
                 opacity: 0;
@@ -105,8 +109,8 @@
 
         text.split("").forEach((char, index) => {
             const span = document.createElement("span");
-            span.textContent = char;
-            span.className = "char";
+            span.textContent = char === " " ? "\u00A0" : char;
+            span.className = "char" + (char === " " ? " space" : "");
             span.style.animationDelay = `${index * 0.05}s`;
             welcomeElement.appendChild(span);
         });
