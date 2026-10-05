@@ -1,12 +1,85 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>xevdvv</title>
+    <style>
+        :root {
+            --bg: #111827;
+            --panel: #1f2937;
+            --text: #f9fafb;
+            --accent: #ff2d55;
+            --accent-dark: #d91b45;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #111827, #1f2937);
+            color: var(--text);
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            margin-bottom: 1rem;
+        }
+
+        .tiktok-link {
+            display: inline-block;
+            margin-top: 1rem;
+            text-decoration: none;
+        }
+
+        .tiktok-button {
+            border: none;
+            border-radius: 999px;
+            padding: 0.9rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 8px 20px rgba(255, 45, 85, 0.35);
+        }
+
+        .tiktok-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(255, 45, 85, 0.5);
+        }
+
+        .tiktok-button:focus-visible {
+            outline: 3px solid #fff;
+            outline-offset: 2px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello World! Welcome to my GitHub website.</h1>
+    <main class="container">
+        <h1>Hello World! Welcome to my GitHub website.</h1>
+
+        <a
+            class="tiktok-link"
+            href="https://www.tiktok.com/@_.x.e._v._"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Follow my TikTok"
+        >
+            <button type="button" class="tiktok-button">Follow my TikTok!</button>
+        </a>
+    </main>
 </body>
 </html>
-<a href="https://www.tiktok.com/@_.x.e._v._" target="_blank">
-    <button>Follow my Tiktok!</button>
-</a>
