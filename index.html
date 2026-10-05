@@ -11,6 +11,8 @@
             --text: #f9fafb;
             --accent: #ff2d55;
             --accent-dark: #d91b45;
+            --home-accent: #22c55e;
+            --home-accent-dark: #16a34a;
         }
 
         * {
@@ -129,6 +131,19 @@
             box-shadow: 0 12px 24px rgba(255, 45, 85, 0.5);
         }
 
+        .home-link {
+            margin-top: 0.75rem;
+        }
+
+        .home-button {
+            background: linear-gradient(135deg, var(--home-accent), var(--home-accent-dark));
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.35);
+        }
+
+        .home-button:hover {
+            box-shadow: 0 12px 24px rgba(34, 197, 94, 0.5);
+        }
+
         .tiktok-button:focus-visible {
             outline: 3px solid #fff;
             outline-offset: 2px;
@@ -149,6 +164,10 @@
             aria-label="Follow my TikTok"
         >
             <button type="button" class="tiktok-button">Follow my TikTok!</button>
+        </a>
+
+        <a class="tiktok-link home-link" href="/home.html" aria-label="Go to Home page">
+            <button type="button" class="tiktok-button home-button">Home</button>
         </a>
     </main>
 
