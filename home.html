@@ -519,6 +519,16 @@
           btn.disabled = false;
         }
 
+        // helpers to show/hide center UI so it reliably returns
+        function showCenterUi() {
+          centerUi.classList.remove('hidden');
+          // reset fade so user can see it immediately
+          resetFadeTimer();
+        }
+        function hideCenterUi() {
+          centerUi.classList.add('hidden');
+        }
+
         async function prepareAndStartRun(resetScore = true) {
           if (running) return;
 
@@ -542,7 +552,7 @@
           beatmap = buildBeatmap();
           nextIndex = 0;
           clearTiles();
-          centerUi.classList.add('hidden');
+          hideCenterUi();
 
           await countdown();
 
@@ -556,6 +566,8 @@
           if (!running) {
             // if already stopped, just show summary
             showSummary();
+            // ensure play button appears so player can restart
+            showCenterUi();
             return;
           }
           // stop the run and accumulate time
@@ -565,6 +577,8 @@
           const now = performance.now() / 1000;
           accumulatedPlayTime += Math.max(0, now - runStartTime);
           showSummary();
+          // when run ends, show the center play UI so user can restart
+          showCenterUi();
         }
 
         function showSummary() {
@@ -584,16 +598,27 @@
 
         function hideSummary() {
           summaryOverlay.classList.add('hidden');
+          // if the run is not active, make sure the main play button is visible again
+          if (!running) showCenterUi();
         }
 
         // Endless behavior: when song ends, increase speed and continue immediately
         song.addEventListener('ended', () => {
-          if (!running) return;
+          if (!running) {
+            // if not running (e.g., paused/ended), show play UI
+            showCenterUi();
+            return;
+          }
           increaseSpeedForNextLoop();
           beatmap = buildBeatmap();
           nextIndex = 0;
           clearTiles();
           try { song.currentTime = 0; song.play().catch(() => {}); } catch (e) {}
+        });
+
+        // also show play button when audio is paused/stopped
+        song.addEventListener('pause', () => {
+          if (!running) showCenterUi();
         });
 
         // improve tap responsiveness: listen to pointerdown as well as click
@@ -631,6 +656,8 @@
             try { song.pause(); } catch (e) {}
           }
           showSummary();
+          // ensure center UI is visible behind the overlay
+          showCenterUi();
         });
 
         // close overlay when tapping background
