@@ -2,262 +2,429 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Mini Rhythm</title>
     <style>
-      :root{
-        --bg-1:#0b1020; --bg-2:#16213e; --panel:rgba(255,255,255,0.04); --panel-border:rgba(255,255,255,0.08);
-        --accent:#6ee7b7; --accent-2:#60a5fa; --hit:#ffd166;
+      :root {
+        --bg-1: #0b1020;
+        --bg-2: #16213e;
+        --panel: rgba(255, 255, 255, 0.04);
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --accent: #6ee7b7;
+        --accent-2: #60a5fa;
+        --hit: #ffd166;
       }
-      *{box-sizing:border-box}
-      html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(135deg,var(--bg-1),var(--bg-2));-webkit-font-smoothing:antialiased}
 
-      /* container */
-      .page{height:100vh;display:flex;align-items:center;justify-content:center;padding:0}
-      .frame{width:100%;max-width:1100px;margin:0;border-radius:14px;background:var(--panel);border:1px solid var(--panel-border);box-shadow:0 20px 60px rgba(0,0,0,0.35);overflow:hidden;position:relative}
+      * { box-sizing: border-box; }
 
-      /* back button top-left */
-      .back{position:absolute;left:12px;top:12px;z-index:60;text-decoration:none;padding:8px 12px;border-radius:10px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 8px 20px rgba(96,165,250,0.12)}
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        font-family: Inter, system-ui, Arial, sans-serif;
+        background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
+        color: #fff;
+      }
 
-      /* playfield */
-      .playfield{height:72vh;min-height:360px;display:flex;align-items:flex-start}
-      .lanes{display:flex;width:100%;height:100%}
-      .lane{flex:1;position:relative;border-left:1px solid rgba(255,255,255,0.02);border-right:1px solid rgba(255,255,255,0.02);overflow:hidden}
-      .lane .hit-row{position:absolute;left:8px;right:8px;bottom:72px;height:10px;border-radius:999px;background:linear-gradient(90deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));pointer-events:none}
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-      /* notes - use transform only for smoothness */
-      .note{position:absolute;left:10%;width:80%;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#021;will-change:transform,opacity}
-      .note.p1{background:linear-gradient(90deg,#ff8a65,#ffb86b)}
-      .note.p2{background:linear-gradient(90deg,#9be7ff,#60a5fa)}
-      .note.p3{background:linear-gradient(90deg,#c4b5fd,#8b5cf6)}
-      .note.p4{background:linear-gradient(90deg,#86efac,#34d399)}
-      .note.hit{filter:brightness(1.05) saturate(1.08);opacity:0.95;transform:scale(0.95)}
-      .note.miss{filter:grayscale(60%) opacity(0.6)}
+      .page {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-      /* center play button */
-      .centerUI{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:50;display:flex;flex-direction:column;align-items:center;gap:12px}
-      .btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#042;border:none;padding:14px 26px;border-radius:14px;font-weight:800;font-size:1rem;cursor:pointer;box-shadow:0 12px 30px rgba(96,165,250,0.12)}
+      .back {
+        position: absolute;
+        top: 14px;
+        left: 14px;
+        z-index: 30;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        color: #04130d;
+        font-weight: 800;
+        padding: 10px 16px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(96, 165, 250, 0.22);
+      }
 
-      /* lives display (hearts) top center */
-      .lives{position:absolute;left:50%;top:12px;transform:translateX(-50%);display:flex;gap:8px;z-index:60}
-      .heart{width:22px;height:20px;display:inline-block;background:linear-gradient(90deg,#ff6b6b,#ff9a9a);clip-path:path('M10.5 3C9 0 4 0 2 3 0 6 4 10 10.5 14 17 10 21 6 19.5 3 18 0 13 0 11.5 3z');opacity:1}
-      .heart.empty{filter:grayscale(100%) opacity(0.25);background:linear-gradient(90deg,#444,#666)}
+      .lives {
+        position: absolute;
+        left: 50%;
+        top: 14px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        z-index: 25;
+      }
 
-      /* mobile pads (visible on small) */
-      .mobilePads{position:absolute;left:0;right:0;bottom:0;display:none;gap:6px;padding:8px;background:linear-gradient(180deg,rgba(0,0,0,0.02),transparent)}
-      .pad{flex:1;height:64px;border-radius:10px;background:linear-gradient(90deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));display:flex;align-items:center;justify-content:center;font-weight:800;color:#d0d7e0}
+      .heart {
+        width: 20px;
+        height: 18px;
+        background: linear-gradient(90deg, #ff677e, #ff9aa6);
+        clip-path: polygon(
+          50% 100%,
+          0% 40%,
+          8% 15%,
+          26% 8%,
+          50% 22%,
+          74% 8%,
+          92% 15%,
+          100% 40%
+        );
+        opacity: 1;
+      }
 
-      @media(max-width:920px){.mobilePads{display:flex}} 
-      @media(max-width:520px){.note{height:56px}}
+      .heart.empty {
+        opacity: 0.2;
+        filter: grayscale(100%);
+      }
 
-      /* game over overlay */
-      .overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,6,23,0.5),rgba(2,6,23,0.6));display:flex;align-items:center;justify-content:center;z-index:70;backdrop-filter:blur(4px)}
-      .hidden{display:none}
+      .playfield {
+        position: absolute;
+        inset: 0;
+        display: flex;
+      }
+
+      .lanes {
+        width: 100%;
+        height: 100%;
+        display: flex;
+      }
+
+      .lane {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        border-left: 1px solid rgba(255, 255, 255, 0.03);
+        border-right: 1px solid rgba(255, 255, 255, 0.03);
+      }
+
+      .lane .hit-row {
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        bottom: 78px;
+        height: 10px;
+        background: linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+        border-radius: 999px;
+      }
+
+      .note {
+        position: absolute;
+        left: 10%;
+        width: 80%;
+        height: 58px;
+        border-radius: 10px;
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+        will-change: transform, opacity;
+      }
+
+      .note.p1 { background: linear-gradient(90deg, #ff8a65, #ffb86b); }
+      .note.p2 { background: linear-gradient(90deg, #9be7ff, #60a5fa); }
+      .note.p3 { background: linear-gradient(90deg, #c4b5fd, #8b5cf6); }
+      .note.p4 { background: linear-gradient(90deg, #86efac, #34d399); }
+
+      .note.hit {
+        opacity: 0.9;
+        transform: scale(0.94);
+      }
+
+      .note.miss {
+        opacity: 0.55;
+        filter: grayscale(100%);
+      }
+
+      .center-ui {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn {
+        border: none;
+        cursor: pointer;
+        border-radius: 14px;
+        padding: 16px 28px;
+        font-weight: 800;
+        font-size: 1rem;
+        color: #04130d;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        box-shadow: 0 20px 40px rgba(96, 165, 250, 0.2);
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(2, 6, 23, 0.5);
+        z-index: 40;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media (max-width: 920px) {
+        .note { height: 54px; }
+      }
     </style>
   </head>
   <body>
     <div class="page">
-      <div class="frame" id="frame">
-        <a class="back" href="index.html">Back</a>
+      <a class="back" href="index.html">Back</a>
 
-        <div class="lives" id="lives" aria-hidden="false"></div>
+      <div class="lives" id="lives"></div>
 
-        <div class="playfield" id="playfield">
-          <div class="lanes" id="lanes">
-            <div class="lane" data-index="0"><div class="hit-row"></div></div>
-            <div class="lane" data-index="1"><div class="hit-row"></div></div>
-            <div class="lane" data-index="2"><div class="hit-row"></div></div>
-            <div class="lane" data-index="3"><div class="hit-row"></div></div>
-          </div>
+      <div class="playfield">
+        <div class="lanes" id="lanes">
+          <div class="lane" data-index="0"><div class="hit-row"></div></div>
+          <div class="lane" data-index="1"><div class="hit-row"></div></div>
+          <div class="lane" data-index="2"><div class="hit-row"></div></div>
+          <div class="lane" data-index="3"><div class="hit-row"></div></div>
         </div>
+      </div>
 
-        <div class="mobilePads" id="mobilePads">
-          <div class="pad" data-index="0"></div>
-          <div class="pad" data-index="1"></div>
-          <div class="pad" data-index="2"></div>
-          <div class="pad" data-index="3"></div>
-        </div>
+      <div class="center-ui" id="centerUi">
+        <button class="btn" id="playBtn">Play</button>
+      </div>
 
-        <div class="centerUI" id="centerUI">
-          <button class="btn" id="playBtn">Play</button>
-        </div>
-
-        <div class="overlay hidden" id="gameOver">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
-            <button class="btn" id="restartBtn">Restart</button>
-          </div>
-        </div>
-
+      <div class="overlay hidden" id="gameOver">
+        <button class="btn" id="restartBtn">Restart</button>
       </div>
     </div>
 
-    <audio id="song" style="display:none" crossorigin="anonymous"></audio>
+    <audio id="song" crossorigin="anonymous" preload="auto" style="display:none"></audio>
 
     <script>
-      (function(){
+      (function () {
         const LANES = 4;
-        const lanesEl = document.getElementById('lanes');
+        const song = document.getElementById('song');
+        const lanes = document.getElementById('lanes');
         const playBtn = document.getElementById('playBtn');
         const restartBtn = document.getElementById('restartBtn');
-        const centerUI = document.getElementById('centerUI');
-        const mobilePads = document.getElementById('mobilePads');
+        const centerUi = document.getElementById('centerUi');
+        const gameOver = document.getElementById('gameOver');
         const livesEl = document.getElementById('lives');
-        const overlay = document.getElementById('gameOver');
-        const song = document.getElementById('song');
 
-        const songUrl = 'https://raw.githubusercontent.com/xevdvv/xevdvv.github.io/main/Mariah%20Deborah%20-%20Na%20Para%20Bang%20%28Official%20Lyric%20Visualizer%29.mp3';
+        const songUrl =
+          'https://raw.githubusercontent.com/xevdvv/xevdvv.github.io/main/Mariah%20Deborah%20-%20Na%20Para%20Bang%20%28Official%20Lyric%20Visualizer%29.mp3';
 
-        const noteTravelTime = 1.55; // seconds
-        const spawnY = -140; // px
+        const noteTravelTime = 1.55;
+        const spawnTop = -140;
 
         let audioCtx = null;
-        let source = null;
+        let sourceNode = null;
         let analyser = null;
-
         let running = false;
-        let beatTimes = []; // seconds in song
-        let beatmap = []; // {t, lane}
+        let beatmap = [];
+        let activeNotes = [];
         let nextIndex = 0;
-        let activeNotes = []; // {id, el, time, lane}
-
+        let rafId = null;
         let lives = 3;
 
-        // performance: keep a single RAF loop, use transforms
-        let rafId = null;
-
-        function initAudio(){
+        function initAudio() {
           if (audioCtx) return;
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          source = audioCtx.createMediaElementSource(song);
-          analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048;
-          source.connect(analyser); analyser.connect(audioCtx.destination);
+          sourceNode = audioCtx.createMediaElementSource(song);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 2048;
+          sourceNode.connect(analyser);
+          analyser.connect(audioCtx.destination);
         }
 
-        function setSong(){
-          song.src = songUrl; song.crossOrigin = 'anonymous'; song.preload = 'auto';
-        }
-
-        function resetGameState(){
-          // remove notes
-          activeNotes.forEach(n=>n.el.remove()); activeNotes = [];
-          beatTimes = []; beatmap = []; nextIndex = 0; cancelFrame();
-          lives = 3; renderLives(); hideOverlay(); showPlayCenter();
-        }
-
-        function renderLives(){
+        function renderLives() {
           livesEl.innerHTML = '';
-          for(let i=0;i<3;i++){
-            const h = document.createElement('div'); h.className='heart' + (i<lives ? '' : ' empty'); livesEl.appendChild(h);
+          for (let i = 0; i < 3; i++) {
+            const heart = document.createElement('div');
+            heart.className = 'heart' + (i < lives ? '' : ' empty');
+            livesEl.appendChild(heart);
           }
         }
 
-        function hideOverlay(){ overlay.classList.add('hidden'); }
-        function showOverlay(){ overlay.classList.remove('hidden'); }
+        function setSong() {
+          song.src = songUrl;
+          song.crossOrigin = 'anonymous';
+          song.preload = 'auto';
+        }
 
-        function showPlayCenter(){ centerUI.style.display='flex'; }
-        function hidePlayCenter(){ centerUI.style.display='none'; }
-
-        function buildBeatmapFromBeats(){
-          if(beatTimes.length<8){
-            // fallback: even grid
-            const bpm = 120; const sec = 60/bpm; const list=[]; for(let i=0;i<64;i++) list.push({t:i*sec+0.4,lane:i%LANES}); return list;
+        function buildBeatmap() {
+          const bpm = 120;
+          const beatSec = 60 / bpm;
+          const beats = [];
+          for (let i = 0; i < 64; i++) {
+            beats.push({ t: i * beatSec + 0.25, lane: i % LANES });
           }
-          // assign lanes in a simple pattern while keeping beat times
-          return beatTimes.map((t,i)=>({t:t,lane: (i%LANES)}));
+          return beats;
         }
 
-        function spawnNoteFor(index, note){
-          const laneEl = lanesEl.querySelector('.lane[data-index="'+note.lane+'"]');
-          const el = document.createElement('div'); el.className='note p'+(note.lane+1); el.dataset.id='n'+index; laneEl.appendChild(el);
-          activeNotes.push({id:'n'+index, el, time:note.t, lane:note.lane});
+        function clearNotes() {
+          activeNotes.forEach((n) => n.el.remove());
+          activeNotes = [];
         }
 
-        function scheduleNotes(){
-          if(!running) return;
-          const current = song.currentTime;
-          while(nextIndex < beatmap.length){
-            const note = beatmap[nextIndex];
-            if(note.t <= current + 1.05){ spawnNoteFor(nextIndex, note); nextIndex++; } else break;
-          }
-        }
-
-        function updateNotes(){
-          if(!running) return;
+        function spawnNotes() {
           const now = song.currentTime;
-          for(let i=activeNotes.length-1;i>=0;i--){
-            const n = activeNotes[i];
-            const laneEl = lanesEl.querySelector('.lane[data-index="'+n.lane+'"]');
-            const laneRect = laneEl.getBoundingClientRect();
-            const hitY = laneRect.height - 72; // px from top of lane
-            const t0 = n.time - noteTravelTime; // spawn time
-            const progress = (now - t0)/noteTravelTime; // 0..1
-            const y = progress * (hitY - spawnY) + spawnY;
-            n.el.style.transform = 'translateY('+ y +'px)';
+          while (nextIndex < beatmap.length) {
+            const note = beatmap[nextIndex];
+            if (note.t <= now + 1.1) {
+              const laneEl = lanes.querySelector('.lane[data-index="' + note.lane + '"]');
+              const el = document.createElement('div');
+              el.className = 'note p' + (note.lane + 1);
+              laneEl.appendChild(el);
+              activeNotes.push({ id: 'n' + nextIndex, el, lane: note.lane, time: note.t });
+              nextIndex++;
+            } else {
+              break;
+            }
+          }
+        }
 
-            if(progress > 1.25){
-              // miss
-              n.el.classList.add('miss'); n.el.remove(); activeNotes.splice(i,1);
+        function updateNotes() {
+          const now = song.currentTime;
+          for (let i = activeNotes.length - 1; i >= 0; i--) {
+            const note = activeNotes[i];
+            const laneEl = lanes.querySelector('.lane[data-index="' + note.lane + '"]');
+            const laneHeight = laneEl.getBoundingClientRect().height;
+            const laneHitY = laneHeight - 78;
+            const progress = (now - (note.time - noteTravelTime)) / noteTravelTime;
+            const y = progress * (laneHitY - spawnTop) + spawnTop;
+            note.el.style.transform = 'translateY(' + y + 'px)';
+
+            if (progress > 1.3) {
+              note.el.classList.add('miss');
+              note.el.remove();
+              activeNotes.splice(i, 1);
               loseLife();
             }
           }
         }
 
-        function loseLife(){ lives = Math.max(0, lives-1); renderLives(); if(lives<=0){ endGame(); } }
+        function loseLife() {
+          lives = Math.max(0, lives - 1);
+          renderLives();
 
-        function endGame(){ running=false; pauseSong(); cancelFrame(); showOverlay(); showPlayCenter(); }
-
-        function hitLaneAt(lane){ if(!running) return; let bestIdx=-1; let bestDiff=1; for(let i=0;i<activeNotes.length;i++){ const an=activeNotes[i]; if(an.lane!==lane) continue; const diff=Math.abs(song.currentTime - an.time); if(diff<bestDiff){ bestDiff=diff; bestIdx=i; } }
-          if(bestIdx!=-1 && bestDiff<=0.22){ const matched = activeNotes[bestIdx]; matched.el.classList.add('hit'); matched.el.remove(); activeNotes.splice(bestIdx,1); playTapTone(); }
-          else{ // penalize
-            loseLife(); playMissTone(); }
+          if (lives <= 0) {
+            running = false;
+            song.pause();
+            cancelAnimationFrame(rafId);
+            gameOver.classList.remove('hidden');
+            centerUi.classList.add('hidden');
+          }
         }
 
-        function playTapTone(){ if(!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value=1400; g.gain.setValueAtTime(0.001,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.06,audioCtx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.02); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.04); }
-        function playMissTone(){ if(!audioCtx) return; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value=220; g.gain.setValueAtTime(0.001,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.06,audioCtx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.06); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.08); }
-
-        function pauseSong(){ try{ song.pause(); }catch(e){} }
-
-        // beat detection (lightweight onset detector)
-        function detectBeatsWhilePlaying(){ if(!analyser) return; const buf = new Uint8Array(analyser.fftSize); let lastEnergy=0; let lastBeat=-999; function tick(){ if(!running) return; analyser.getByteTimeDomainData(buf); let sum=0; for(let i=0;i<buf.length;i++){ const v=(buf[i]-128)/128; sum+=v*v; } const rms=Math.sqrt(sum/buf.length); const energy=rms*220; const threshold=0.18 + Math.max(0, lastEnergy*0.55); if(energy>threshold && song.currentTime - lastBeat > 0.28 && song.currentTime > 0.5){ beatTimes.push(song.currentTime); lastBeat = song.currentTime; } lastEnergy = energy*0.85 + lastEnergy*0.15; requestAnimationFrame(tick); }
-          requestAnimationFrame(tick);
+        function playTone(freq, duration) {
+          if (!audioCtx) return;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.06, audioCtx.currentTime + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration + 0.02);
         }
 
-        function buildAndStart(){ beatmap = buildBeatmapFromBeats(); nextIndex=0; }
+        function hitLane(lane) {
+          if (!running) return;
 
-        function startGame(){ if(running) return; initAudio(); audioCtx.resume(); // prepare
-          resetVisualsForStart(); running=true; beatTimes=[]; buildAndStart(); song.currentTime=0; song.play().then(()=>{ detectBeatsWhilePlaying(); }).catch(()=>{}); loop(); hidePlayCenter(); }
+          let bestIdx = -1;
+          let bestDiff = 999;
 
-        function restartGame(){ resetGameState(); startGame(); }
+          for (let i = 0; i < activeNotes.length; i++) {
+            const note = activeNotes[i];
+            if (note.lane !== lane) continue;
+            const diff = Math.abs(song.currentTime - note.time);
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              bestIdx = i;
+            }
+          }
 
-        function initAudio(){ if(audioCtx) return; audioCtx = new (window.AudioContext || window.webkitAudioContext)(); source = audioCtx.createMediaElementSource(song); analyser = audioCtx.createAnalyser(); analyser.fftSize=2048; source.connect(analyser); analyser.connect(audioCtx.destination); }
+          if (bestIdx !== -1 && bestDiff <= 0.22) {
+            const match = activeNotes[bestIdx];
+            match.el.classList.add('hit');
+            match.el.remove();
+            activeNotes.splice(bestIdx, 1);
+            playTone(1400, 0.04);
+          } else {
+            loseLife();
+            playTone(220, 0.06);
+          }
+        }
 
-        function resetVisualsForStart(){ // clear existing notes
-          activeNotes.forEach(n=>n.el.remove()); activeNotes=[]; nextIndex=0; renderLives(); hideOverlay(); }
+        function startGame() {
+          if (running) return;
+          initAudio();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        function loop(){ rafId = requestAnimationFrame(loop); scheduleNotes(); updateNotes(); }
-        function cancelFrame(){ if(rafId) cancelAnimationFrame(rafId); rafId=null; }
+          clearNotes();
+          beatmap = buildBeatmap();
+          nextIndex = 0;
+          lives = 3;
+          renderLives();
 
-        // inputs
-        window.addEventListener('keydown',(e)=>{
-          if(e.key>='1' && e.key<='4'){ hitLaneAt(Number(e.key)-1); }
-          if(e.code==='Space' || e.code==='Enter'){ e.preventDefault(); hitLaneAt(1); }
+          centerUi.classList.add('hidden');
+          gameOver.classList.add('hidden');
+
+          running = true;
+          song.currentTime = 0;
+          song.play();
+
+          function loop() {
+            if (!running) return;
+            spawnNotes();
+            updateNotes();
+            rafId = requestAnimationFrame(loop);
+          }
+
+          rafId = requestAnimationFrame(loop);
+        }
+
+        function restartGame() {
+          startGame();
+        }
+
+        playBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', restartGame);
+
+        lanes.addEventListener('pointerdown', (event) => {
+          const laneEl = event.target.closest('.lane');
+          if (!laneEl) return;
+          hitLane(Number(laneEl.dataset.index));
+        }, { passive: true });
+
+        window.addEventListener('keydown', (event) => {
+          if (event.code === 'Space' || event.code === 'Enter') {
+            event.preventDefault();
+            hitLane(1);
+          }
+
+          if (event.key >= '1' && event.key <= '4') {
+            hitLane(Number(event.key) - 1);
+          }
         });
 
-        lanesEl.addEventListener('pointerdown',(e)=>{ const laneEl = e.target.closest('.lane'); if(!laneEl) return; hitLaneAt(Number(laneEl.dataset.index)); },{passive:true});
-        mobilePads.querySelectorAll('.pad').forEach(p=>p.addEventListener('pointerdown',()=>hitLaneAt(Number(p.dataset.index)),{passive:true}));
-
-        playBtn.addEventListener('click',()=>{ initAudio(); audioCtx.resume(); startGame(); });
-        restartBtn.addEventListener('click',()=>{ restartGame(); });
-
-        // layout & initialization
-        function checkMobile(){ mobilePads.style.display = window.innerWidth <= 920 ? 'flex' : 'none'; }
-        window.addEventListener('resize', checkMobile);
-        setSong(); checkMobile(); renderLives();
-
-        // helper: build beatmap from detected beats if available else fallback
-        function buildBeatmapFromBeats(){ if(beatTimes.length>=8){ const map = beatTimes.map((t,i)=>({t:t,lane:i%LANES})); // simple lane assignment
-            return map; } else { const bpm=120; const sec=60/bpm; const fallback=[]; for(let i=0;i<64;i++) fallback.push({t:i*sec+0.4,lane:i%LANES}); return fallback; } }
-
+        setSong();
+        renderLives();
       })();
     </script>
   </body>
