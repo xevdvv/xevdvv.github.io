@@ -209,7 +209,7 @@
       </div>
     </div>
 
-    <audio id="song" crossorigin="anonymous" preload="auto" style="display:none"></audio>
+    <audio id="song" crossorigin="anonymous" preload="none" style="display:none"></audio>
 
     <script>
       (function () {
@@ -260,7 +260,9 @@
         function setSong() {
           song.src = songUrl;
           song.crossOrigin = 'anonymous';
-          song.preload = 'auto';
+          song.preload = 'none';
+          song.autoplay = false;
+          song.pause();
         }
 
         function buildBeatmap() {
@@ -387,7 +389,7 @@
 
           running = true;
           song.currentTime = 0;
-          song.play();
+          song.play().catch(()=>{});
 
           function loop() {
             if (!running) return;
@@ -423,8 +425,17 @@
           }
         });
 
+        // Ensure song is not playing on load and play UI is visible
         setSong();
         renderLives();
+        centerUi.classList.remove('hidden');
+
+        // Pause audio and do not auto-start
+        window.addEventListener('load', () => {
+          try { song.pause(); } catch (e) {}
+          if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+        });
+
       })();
     </script>
   </body>
