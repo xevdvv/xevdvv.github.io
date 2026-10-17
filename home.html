@@ -106,6 +106,7 @@
         border-left: 1px solid rgba(255,255,255,0.03);
         border-right: 1px solid rgba(255,255,255,0.03);
         overflow: hidden;
+        touch-action: none;
       }
 
       .hit-row {
@@ -124,9 +125,12 @@
         width: 80%;
         height: 58px;
         border-radius: 12px;
-        box-shadow: 0 12px 24px rgba(0,0,0,0.35);
-        transform: translateY(0px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+        transform: translate3d(0, 0, 0);
+        will-change: transform, opacity;
         transition: opacity 0.07s ease;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
       }
 
       .tile.p1 { background: linear-gradient(90deg, #ff8a65, #ffb86b); }
@@ -205,7 +209,7 @@
       </div>
     </div>
 
-    <audio id="song" crossorigin="anonymous" preload="none" style="display:none"></audio>
+    <audio id="song" crossorigin="anonymous" preload="auto" style="display:none"></audio>
 
     <script>
       (function () {
@@ -224,6 +228,7 @@
         const MISS_WINDOW = 0.34;
         const BASE_TRAVEL = 2.2;
         const MAX_SPEED = 8;
+        const HOLD_START_PROGRESS = 0.55;
 
         let audioCtx = null;
         let running = false;
@@ -273,7 +278,8 @@
         function setSong() {
           song.src = songUrl;
           song.crossOrigin = 'anonymous';
-          song.preload = 'none';
+          song.preload = 'auto';
+          try { song.load(); } catch (e) {}
           song.pause();
         }
 
@@ -298,12 +304,14 @@
         }
 
         function clearTiles() {
-          activeNotes.forEach((item) => item.el.remove());
+          activeNotes.forEach((item) => {
+            if (item.el && item.el.parentNode) item.el.remove();
+          });
           activeNotes = [];
         }
 
         function spawnNotes() {
-          const now = song.currentTime;
+          const now = song.currentTime || 0;
           while (nextIndex < beatmap.length && beatmap[nextIndex].time <= now + noteTravelTime + 0.12) {
             const note = beatmap[nextIndex];
             const laneEl = lanes.querySelector('.lane[data-index="' + note.lane + '"]');
@@ -330,14 +338,15 @@
         }
 
         function removeNote(noteItem) {
-          if (noteItem && noteItem.el && noteItem.el.parentNode) {
-            noteItem.el.remove();
-          }
+          if (!noteItem) return;
+          try {
+            if (noteItem.el && noteItem.el.parentNode) noteItem.el.remove();
+          } catch (e) {}
           activeNotes = activeNotes.filter((item) => item.id !== noteItem.id);
         }
 
         function updateTiles() {
-          const now = song.currentTime;
+          const now = song.currentTime || 0;
           const laneHeight = lanes.getBoundingClientRect().height || 600;
           const spawnY = -90;
           const hitY = laneHeight - 86;
@@ -348,7 +357,7 @@
 
             const progress = (now - (item.time - noteTravelTime)) / noteTravelTime;
             const y = spawnY + (hitY - spawnY) * clamp(progress, 0, 1);
-            item.el.style.transform = 'translateY(' + y + 'px)';
+            item.el.style.transform = 'translate3d(0,' + Math.round(y) + 'px,0)';
 
             if (item.hold > 0 && item.holding && now > item.time + item.hold + 0.18) {
               if (!item.hit) {
@@ -380,7 +389,7 @@
           if (lives <= 0) {
             running = false;
             song.pause();
-            cancelAnimationFrame(rafId);
+            if (rafId) cancelAnimationFrame(rafId);
             gameOver.classList.remove('hidden');
             centerUi.classList.add('hidden');
           }
@@ -393,12 +402,13 @@
         }
 
         function handleLaneHit(laneIndex) {
+          const now = song.currentTime || 0;
           let bestItem = null;
           let bestGap = Number.POSITIVE_INFINITY;
 
           for (const item of activeNotes) {
-            if (item.lane !== laneIndex) continue;
-            const gap = Math.abs(song.currentTime - item.time);
+            if (item.lane !== laneIndex || item.hit) continue;
+            const gap = Math.abs(now - item.time);
             if (gap < bestGap) {
               bestGap = gap;
               bestItem = item;
@@ -407,28 +417,33 @@
 
           if (!bestItem) return;
 
-          if (bestGap <= HIT_WINDOW) {
-            if (bestItem.hold > 0) {
+          if (bestItem.hold > 0) {
+            const progress = (now - (bestItem.time - noteTravelTime)) / noteTravelTime;
+            if (progress >= HOLD_START_PROGRESS || bestGap <= HIT_WINDOW) {
               if (!bestItem.holding) {
                 bestItem.holding = true;
-                bestItem.holdStart = song.currentTime;
+                bestItem.holdStart = now;
                 bestItem.el.classList.add('hit');
                 return;
               }
-            } else {
-              bestItem.hit = true;
-              bestItem.el.classList.add('hit');
-              removeNote(bestItem);
-              awardPoints(100);
-              playTone(1400, 0.03);
             }
+            return;
+          }
+
+          if (bestGap <= HIT_WINDOW) {
+            bestItem.hit = true;
+            bestItem.el.classList.add('hit');
+            removeNote(bestItem);
+            awardPoints(100);
+            playTone(1400, 0.03);
           }
         }
 
         function handleHoldRelease(laneIndex) {
           for (const item of activeNotes) {
             if (item.lane !== laneIndex || item.hold <= 0 || !item.holding) continue;
-            const heldEnough = song.currentTime >= item.time + item.hold - 0.08;
+            const now = song.currentTime || 0;
+            const heldEnough = now >= item.time + item.hold - 0.08;
             if (heldEnough) {
               item.hit = true;
               item.el.classList.add('hit');
@@ -470,7 +485,7 @@
 
           ensureAudio();
           if (audioCtx.state === 'suspended') {
-            await audioCtx.resume();
+            try { await audioCtx.resume(); } catch (e) {}
           }
 
           if (resetScore) {
@@ -501,7 +516,7 @@
         function nextRound() {
           if (!running) return;
           running = false;
-          cancelAnimationFrame(rafId);
+          if (rafId) cancelAnimationFrame(rafId);
           clearTiles();
 
           if (lives > 0) {
@@ -528,9 +543,7 @@
         }
 
         song.addEventListener('ended', () => {
-          if (running) {
-            nextRound();
-          }
+          if (running) nextRound();
         });
 
         playBtn.addEventListener('click', () => {
@@ -550,19 +563,23 @@
           const lane = event.target.closest('.lane');
           if (!lane || !running) return;
           const laneIndex = Number(lane.dataset.index);
-          const isPointerDown = true;
-          holdState[laneIndex] = isPointerDown;
+          holdState[laneIndex] = true;
           handleLaneHit(laneIndex);
-        });
+        }, { passive: true });
 
-        document.addEventListener('pointerup', () => {
+        document.addEventListener('pointerup', (event) => {
+          const lane = event.target.closest('.lane');
+          if (lane) {
+            try { lane.releasePointerCapture && lane.releasePointerCapture(event.pointerId); } catch (e) {}
+          }
+
           for (let laneIndex = 0; laneIndex < 4; laneIndex += 1) {
             if (holdState[laneIndex]) {
               handleHoldRelease(laneIndex);
             }
             holdState[laneIndex] = false;
           }
-        });
+        }, { passive: true });
 
         const keyMap = { '1': 0, '2': 1, '3': 2, '4': 3 };
         window.addEventListener('keydown', (event) => {
