@@ -53,6 +53,8 @@
         font-weight: 800;
         color: #04130d;
         background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .end-btn {
@@ -67,6 +69,8 @@
         color: #04130d;
         background: rgba(255,255,255,0.06);
         border: 1px solid rgba(255,255,255,0.06);
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .scoreDisplay {
@@ -81,6 +85,8 @@
         background: rgba(255,255,255,0.04);
         cursor: pointer;
         user-select: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
 
       .playfield {
@@ -165,6 +171,17 @@
         color: #04130d;
         background: linear-gradient(90deg, var(--accent), var(--accent-2));
         box-shadow: 0 20px 40px rgba(96,165,250,0.2);
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        transition: opacity 280ms ease, transform 120ms ease;
+      }
+
+      /* visual active feedback */
+      .btn:active { transform: scale(0.98); }
+
+      /* faded state for idle buttons */
+      .btn.faded, .end-btn.faded, .back.faded, .scoreDisplay.faded {
+        opacity: 0.45;
       }
 
       .overlay {
@@ -244,6 +261,7 @@
         const summaryRestartBtn = document.getElementById('summaryRestartBtn');
         const endBtn = document.getElementById('endBtn');
         const scoreEl = document.getElementById('scoreDisplay');
+        const backLink = document.querySelector('.back');
 
         const songUrl = 'https://raw.githubusercontent.com/xevdvv/xevdvv.github.io/main/Mariah%20Deborah%20-%20Na%20Para%20Bang%20%28Official%20Lyric%20Visualizer%29.mp3';
 
@@ -269,6 +287,11 @@
         // time played tracking
         let runStartTime = 0; // seconds (performance.now()/1000)
         let accumulatedPlayTime = 0; // seconds
+
+        // fade/idle handling
+        const IDLE_FADE_MS = 2000; // fade after 2s of no interaction
+        let fadeTimer = null;
+        const interactiveButtons = [playBtn, endBtn, scoreEl, backLink, summaryRestartBtn].filter(Boolean);
 
         function clamp(value, min, max) {
           return Math.min(Math.max(value, min), max);
@@ -573,9 +596,16 @@
           try { song.currentTime = 0; song.play().catch(() => {}); } catch (e) {}
         });
 
-        playBtn.addEventListener('click', () => {
+        // improve tap responsiveness: listen to pointerdown as well as click
+        function startBtnHandler(e) {
+          // stop event propagation so pointer events on lanes don't misfire
+          e && e.stopPropagation && e.stopPropagation();
           prepareAndStartRun(true);
-        });
+        }
+
+        playBtn.addEventListener('click', startBtnHandler);
+        playBtn.addEventListener('pointerdown', startBtnHandler, { passive: true });
+        playBtn.addEventListener('touchstart', startBtnHandler, { passive: true });
 
         // restart from overlay
         summaryRestartBtn.addEventListener('click', async () => {
@@ -610,6 +640,7 @@
           }
         });
 
+        // some pages referenced restartBtn previously; keep safe no-op if missing
         restartBtn && restartBtn.addEventListener('click', () => {
           // restart main UI button behaviour
           accumulatedPlayTime = 0;
@@ -658,6 +689,35 @@
             holdState[laneIndex] = false;
           }
         });
+
+        // fade helper functions
+        function setButtonsFaded(faded) {
+          interactiveButtons.forEach((el) => {
+            if (!el) return;
+            if (faded) el.classList.add('faded'); else el.classList.remove('faded');
+          });
+        }
+
+        function resetFadeTimer() {
+          // clear existing
+          if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null; }
+          // remove faded immediately on interaction
+          setButtonsFaded(false);
+          // re-schedule fade
+          fadeTimer = setTimeout(() => {
+            // don't fade while summary overlay is open
+            if (summaryOverlay && !summaryOverlay.classList.contains('hidden')) return;
+            setButtonsFaded(true);
+          }, IDLE_FADE_MS);
+        }
+
+        // listen for user interactions to control fade behavior
+        ['pointermove', 'pointerdown', 'touchstart', 'keydown', 'mousemove', 'mousedown'].forEach((evt) => {
+          window.addEventListener(evt, resetFadeTimer, { passive: true });
+        });
+
+        // initialize fade timer
+        resetFadeTimer();
 
         setSong();
         renderScore();
