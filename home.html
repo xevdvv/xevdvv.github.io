@@ -55,27 +55,8 @@
         background: linear-gradient(90deg, var(--accent), var(--accent-2));
       }
 
-      .lives {
-        position: absolute;
-        top: 14px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 8px;
-        z-index: 50;
-      }
-
-      .heart {
-        width: 20px;
-        height: 18px;
-        background: linear-gradient(90deg, #ff677e, #ff9aa6);
-        clip-path: polygon(50% 100%, 0% 40%, 8% 15%, 26% 8%, 50% 22%, 74% 8%, 92% 15%, 100% 40%);
-      }
-
-      .heart.empty {
-        opacity: 0.18;
-        filter: grayscale(100%);
-      }
+      /* lives hidden since life mechanic removed */
+      .lives { display: none; }
 
       .scoreDisplay {
         position: absolute;
@@ -106,15 +87,15 @@
         border-left: 1px solid rgba(255,255,255,0.03);
         border-right: 1px solid rgba(255,255,255,0.03);
         overflow: hidden;
-        touch-action: none;
+        touch-action: none; /* help mobile pointer handling */
       }
 
       .hit-row {
         position: absolute;
         left: 8px;
         right: 8px;
-        bottom: 78px;
-        height: 12px;
+        bottom: 100px; /* moved down to match taller tiles */
+        height: 16px;
         border-radius: 999px;
         background: linear-gradient(90deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03));
       }
@@ -123,8 +104,9 @@
         position: absolute;
         left: 10%;
         width: 80%;
-        height: 58px;
+        height: 110px; /* increased vertical length */
         border-radius: 12px;
+        /* reduced shadows for mobile performance */
         box-shadow: 0 6px 12px rgba(0,0,0,0.25);
         transform: translate3d(0, 0, 0);
         will-change: transform, opacity;
@@ -219,14 +201,14 @@
         const restartBtn = document.getElementById('restartBtn');
         const centerUi = document.getElementById('centerUi');
         const gameOver = document.getElementById('gameOver');
-        const livesEl = document.getElementById('lives');
+        const livesEl = document.getElementById('lives'); // hidden now
         const scoreEl = document.getElementById('scoreDisplay');
 
         const songUrl = 'https://raw.githubusercontent.com/xevdvv/xevdvv.github.io/main/Mariah%20Deborah%20-%20Na%20Para%20Bang%20%28Official%20Lyric%20Visualizer%29.mp3';
 
         const HIT_WINDOW = 0.22;
         const MISS_WINDOW = 0.34;
-        const BASE_TRAVEL = 2.2;
+        const BASE_TRAVEL = 3.2; // increased to slow down notes
         const MAX_SPEED = 8;
         const HOLD_START_PROGRESS = 0.55;
 
@@ -237,7 +219,6 @@
         let nextIndex = 0;
         let rafId = null;
         let score = 0;
-        let lives = 3;
         let speedMultiplier = 1;
         let noteTravelTime = BASE_TRAVEL;
         let lastNoteId = 0;
@@ -260,15 +241,6 @@
           gainNode.connect(audioCtx.destination);
           oscillator.start();
           oscillator.stop(audioCtx.currentTime + duration + 0.02);
-        }
-
-        function renderLives() {
-          livesEl.innerHTML = '';
-          for (let i = 0; i < 3; i++) {
-            const heart = document.createElement('div');
-            heart.className = 'heart' + (i < lives ? '' : ' empty');
-            livesEl.appendChild(heart);
-          }
         }
 
         function renderScore() {
@@ -348,8 +320,8 @@
         function updateTiles() {
           const now = song.currentTime || 0;
           const laneHeight = lanes.getBoundingClientRect().height || 600;
-          const spawnY = -90;
-          const hitY = laneHeight - 86;
+          const spawnY = -160; // higher spawn to match taller tiles
+          const hitY = laneHeight - 140;
 
           for (let i = activeNotes.length - 1; i >= 0; i--) {
             const item = activeNotes[i];
@@ -372,7 +344,8 @@
             if (progress > 1.25 && !item.hit) {
               item.el.classList.add('miss');
               removeNote(item);
-              loseLife();
+              // life removed: just play a miss sound and continue
+              playTone(220, 0.06);
             }
           }
         }
@@ -380,19 +353,6 @@
         function awardPoints(amount) {
           score += amount;
           renderScore();
-        }
-
-        function loseLife() {
-          lives = Math.max(0, lives - 1);
-          renderLives();
-
-          if (lives <= 0) {
-            running = false;
-            song.pause();
-            if (rafId) cancelAnimationFrame(rafId);
-            gameOver.classList.remove('hidden');
-            centerUi.classList.add('hidden');
-          }
         }
 
         function cycleSpeed() {
@@ -453,7 +413,7 @@
             } else {
               item.el.classList.add('miss');
               removeNote(item);
-              loseLife();
+              // life removed: just play miss sound
               playTone(220, 0.06);
             }
             item.holding = false;
@@ -490,10 +450,8 @@
 
           if (resetScore) {
             score = 0;
-            lives = 3;
             speedMultiplier = 1;
             noteTravelTime = BASE_TRAVEL;
-            renderLives();
             renderScore();
           }
 
@@ -519,27 +477,24 @@
           if (rafId) cancelAnimationFrame(rafId);
           clearTiles();
 
-          if (lives > 0) {
-            cycleSpeed();
-            centerUi.classList.remove('hidden');
-            const button = centerUi.querySelector('.btn');
-            button.textContent = 'Speed x' + speedMultiplier;
-            button.disabled = true;
+          // life removed: always cycle speed and continue to next round
+          cycleSpeed();
+          centerUi.classList.remove('hidden');
+          const button = centerUi.querySelector('.btn');
+          button.textContent = 'Speed x' + speedMultiplier;
+          button.disabled = true;
 
-            setTimeout(async () => {
-              await countdown();
-              centerUi.classList.add('hidden');
-              beatmap = buildBeatmap();
-              nextIndex = 0;
-              clearTiles();
-              running = true;
-              song.currentTime = 0;
-              song.play().catch(() => {});
-              updateLoop();
-            }, 300);
-          } else {
-            gameOver.classList.remove('hidden');
-          }
+          setTimeout(async () => {
+            await countdown();
+            centerUi.classList.add('hidden');
+            beatmap = buildBeatmap();
+            nextIndex = 0;
+            clearTiles();
+            running = true;
+            song.currentTime = 0;
+            song.play().catch(() => {});
+            updateLoop();
+          }, 300);
         }
 
         song.addEventListener('ended', () => {
@@ -601,7 +556,6 @@
         });
 
         setSong();
-        renderLives();
         renderScore();
       })();
     </script>
