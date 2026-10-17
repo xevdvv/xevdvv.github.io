@@ -3,124 +3,64 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Attachments</title>
+    <title>Project Sekai — Mini Rhythm</title>
     <style>
       :root {
-        --bg-1: #111827;
-        --bg-2: #1f2937;
-        --panel: rgba(255, 255, 255, 0.06);
-        --panel-border: rgba(255, 255, 255, 0.12);
-        --text: #f9fafb;
-        --muted: #d1d5db;
-        --accent: #ff2d55;
-        --accent-dark: #d91b45;
+        --bg-1: #0b1020;
+        --bg-2: #16213e;
+        --panel: rgba(255, 255, 255, 0.04);
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text: #f8fafc;
+        --muted: #9aa4b2;
+        --accent: #6ee7b7;
+        --accent-2: #60a5fa;
+        --hit: #ffd166;
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
-
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
       body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: Arial, Helvetica, sans-serif;
-        background: linear-gradient(135deg, var(--bg-1), var(--bg-2));
-        color: var(--text);
+        margin: 0; min-height: 100vh; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        background: linear-gradient(135deg, var(--bg-1), var(--bg-2)); color: var(--text);
+        -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
       }
 
-      .page-shell {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 5rem 1.5rem 2rem;
-      }
+      .page-shell { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 1rem; }
+      .hero { width: min(1100px, 98%); background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px; padding: clamp(1rem, 2.5vw, 2rem); box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
 
-      .hero {
-        width: min(900px, 100%);
-        background: var(--panel);
-        border: 1px solid var(--panel-border);
-        border-radius: 24px;
-        padding: clamp(1.5rem, 3vw, 3rem);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-        backdrop-filter: blur(8px);
-      }
+      .topbar { display:flex; justify-content:space-between; gap:1rem; align-items:center; margin-bottom:1rem; }
+      .back-link { text-decoration:none; color:var(--text); font-weight:700; background:linear-gradient(90deg,var(--accent),var(--accent-2)); padding:0.6rem 1rem; border-radius:999px; }
 
-      .topbar {
-        display: flex;
-        justify-content: flex-start;
-        margin-bottom: 2rem;
-      }
+      .header { display:flex; gap:1rem; align-items:center; }
+      h1 { margin:0; font-size: clamp(1.4rem, 2.6vw, 2.4rem); }
+      p.lead { margin:0; color:var(--muted); }
 
-      .back-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        color: #fff;
-        font-weight: 700;
-        background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-        border-radius: 999px;
-        padding: 0.85rem 1.4rem;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        box-shadow: 0 8px 20px rgba(255, 45, 85, 0.35);
-      }
+      .layout { display:grid; grid-template-columns: 1fr 360px; gap:1rem; margin-top:1rem; }
+      @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
 
-      .back-link:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 24px rgba(255, 45, 85, 0.5);
-      }
+      .game-shell { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:1rem; border:1px solid rgba(255,255,255,0.03); }
+      .game-canvas { position:relative; height:520px; background: linear-gradient(180deg, rgba(0,0,0,0.12), transparent); overflow:hidden; border-radius:8px; border:1px solid rgba(255,255,255,0.02); }
 
-      .back-link:focus-visible {
-        outline: 3px solid #fff;
-        outline-offset: 3px;
-      }
+      .lane { position:absolute; left:50%; transform:translateX(-50%); width:180px; height:100%; display:flex; flex-direction:column; align-items:center; }
+      .lane .bar { position:absolute; bottom:120px; width:100%; height:6px; background:linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)); box-shadow:0 6px 18px rgba(0,0,0,0.45); border-radius:4px; }
 
-      .content {
-        display: grid;
-        gap: 1rem;
-      }
+      .hit-line { position:absolute; bottom:120px; width:100%; height:6px; border-radius:999px; pointer-events:none; }
 
-      h1 {
-        margin: 0;
-        font-size: clamp(2.2rem, 5vw, 4rem);
-        line-height: 1.1;
-      }
+      .note { position:absolute; width:64px; height:20px; left:50%; transform:translateX(-50%); background: linear-gradient(90deg,#ff8a65,#ffb86b); border-radius:8px; box-shadow: 0 6px 18px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; font-weight:700; color:#111827; }
 
-      .image-area {
-        min-height: 220px;
-        border: 1px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.02);
-      }
+      .hud { padding:0.6rem; display:flex; flex-direction:column; gap:0.6rem; }
+      .score { font-size:1.5rem; font-weight:800; }
+      .meter { background: rgba(255,255,255,0.04); border-radius:8px; padding:6px; }
+      .controls { display:flex; gap:8px; flex-wrap:wrap; }
+      .btn { background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#042; padding:0.6rem 0.8rem; border-radius:8px; text-decoration:none; font-weight:700; cursor:pointer; border:none; }
+      .muted { color:var(--muted); font-size:0.95rem; }
 
-      .cta-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-top: 1rem;
-      }
+      .feedback { position:absolute; left:50%; transform:translateX(-50%); bottom:170px; font-weight:900; font-size:1.2rem; color:var(--hit); text-shadow:0 6px 30px rgba(255,209,102,0.15); pointer-events:none; }
 
-      .primary-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        border-radius: 999px;
-        padding: 0.9rem 1.4rem;
-        font-weight: 700;
-        transition: transform 0.2s ease, opacity 0.2s ease;
-        background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-        color: #fff;
-      }
+      footer { margin-top:1rem; color:var(--muted); font-size:0.9rem; }
 
-      .primary-btn:hover {
-        transform: translateY(-1px);
-      }
+      .note.hit { background:linear-gradient(90deg,#9be7ff,#60a5fa); color:#012; transform:translateX(-50%) scale(0.9); opacity:0.9; }
+      .note.miss { background:linear-gradient(90deg,#999,#666); opacity:0.7; }
     </style>
   </head>
   <body>
@@ -128,17 +68,268 @@
       <section class="hero" aria-labelledby="home-title">
         <div class="topbar">
           <a class="back-link" href="index.html" aria-label="Back to the main page">Back</a>
+          <div class="header">
+            <div>
+              <h1 id="home-title">Project Sekai — Mini Rhythm</h1>
+              <p class="lead">A lightweight rhythm demo built into this page. Hit Space / Tap when the notes reach the hit line.</p>
+            </div>
+          </div>
         </div>
 
-        <div class="content">
-          <h1 id="home-title">Attachments</h1>
-          <div class="image-area" aria-label="Image gallery"></div>
+        <div class="layout">
+          <div class="game-shell">
+            <div id="game" class="game-canvas" aria-label="Rhythm playfield">
+              <div class="lane">
+                <div class="bar"></div>
+                <div id="hitline" class="hit-line"></div>
+                <div id="feedback" class="feedback" aria-hidden="true"></div>
+              </div>
+            </div>
 
-          <div class="cta-row">
-            <a class="primary-btn" href="https://www.tiktok.com/@_.x.e._v._" target="_blank" rel="noopener noreferrer">My Tiktok</a>
+            <footer>
+              <div class="muted">Controls: Space / Enter to hit. Click the play button to start. This is a demo — aim for timing and combos.</div>
+            </footer>
           </div>
+
+          <aside class="hud">
+            <div class="score" id="score">Score: 0</div>
+            <div class="meter" id="combo">Combo: 0</div>
+            <div class="meter" id="accuracy">Accuracy: 100%</div>
+
+            <div class="controls">
+              <button class="btn" id="startBtn">Play</button>
+              <button class="btn" id="stopBtn">Stop</button>
+              <button class="btn" id="tapBtn">Tap</button>
+            </div>
+
+            <div class="muted">Song: Demo Beat — generated. Note speed and timings are tuned for demo play. Refresh to reset fully.</div>
+
+            <div style="margin-top:8px; color:var(--muted); font-size:0.9rem;">Built-in mini-game inspired by Project Sekai mechanics — single-lane rhythm, hit timing, score & combo.</div>
+          </aside>
         </div>
       </section>
     </main>
+
+    <script>
+      (function(){
+        const game = document.getElementById('game');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const tapBtn = document.getElementById('tapBtn');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo');
+        const accEl = document.getElementById('accuracy');
+        const feedback = document.getElementById('feedback');
+
+        const beatmap = [];
+        const BPM = 120;
+        const beatInterval = 60 / BPM;
+        for (let i = 0; i < 32; i++) {
+          beatmap.push(i * beatInterval + (i % 4 === 2 ? 0.25 : 0));
+        }
+
+        const noteTravelTime = 2.0;
+        const noteSpawnY = -40;
+        let audioCtx = null;
+        let startTime = null;
+        let running = false;
+        let activeNotes = new Map();
+        let nextNoteIndex = 0;
+        let score = 0;
+        let combo = 0;
+        let hits = 0;
+        let total = 0;
+        let fbTimer = null;
+
+        function ensureAudio() {
+          if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+        }
+
+        function playClick(time, freq = 1000, length = 0.04) {
+          ensureAudio();
+          const o = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          o.type = 'sine';
+          o.frequency.value = freq;
+          g.gain.setValueAtTime(0.001, time);
+          g.gain.exponentialRampToValueAtTime(0.06, time + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.001, time + length);
+          o.connect(g); g.connect(audioCtx.destination);
+          o.start(time); o.stop(time + length + 0.02);
+        }
+
+        function getHitLine() {
+          return game.getBoundingClientRect().height - 120;
+        }
+
+        function resetState() {
+          score = 0; combo = 0; hits = 0; total = 0; nextNoteIndex = 0;
+          scoreEl.textContent = 'Score: 0';
+          comboEl.textContent = 'Combo: 0';
+          accEl.textContent = 'Accuracy: 100%';
+          feedback.textContent = '';
+          activeNotes.forEach((n) => n.el.remove());
+          activeNotes.clear();
+        }
+
+        function createNote(id, time) {
+          const el = document.createElement('div');
+          el.className = 'note';
+          el.textContent = '♪';
+          el.style.top = noteSpawnY + 'px';
+          game.appendChild(el);
+          activeNotes.set(id, { el, time });
+        }
+
+        function updateNotes() {
+          if (!running || !audioCtx) return;
+          const nowSec = audioCtx.currentTime;
+          const hitY = getHitLine();
+
+          activeNotes.forEach((note, id) => {
+            const progress = (nowSec - note.time + noteTravelTime) / noteTravelTime;
+            const y = progress * (hitY - noteSpawnY) + noteSpawnY;
+            note.el.style.top = y + 'px';
+
+            if (progress > 1.4) {
+              note.el.classList.add('miss');
+              activeNotes.delete(id);
+              note.el.remove();
+              combo = 0;
+              total++;
+              comboEl.textContent = 'Combo: ' + combo;
+              updateAccuracy();
+              showFeedback('MISS', '#ff6b6b');
+            }
+          });
+        }
+
+        function scheduleNotes() {
+          if (!running || !audioCtx) return;
+          while (nextNoteIndex < beatmap.length) {
+            const noteTime = beatmap[nextNoteIndex];
+            const spawnTime = startTime + Math.max(0, noteTime - noteTravelTime);
+            if (spawnTime <= audioCtx.currentTime + 1.3) {
+              const id = 'n' + nextNoteIndex;
+              createNote(id, startTime + noteTime);
+              nextNoteIndex++;
+            } else {
+              break;
+            }
+          }
+        }
+
+        function updateAccuracy() {
+          const acc = total === 0 ? 100 : Math.round((hits / total) * 100);
+          accEl.textContent = 'Accuracy: ' + acc + '%';
+        }
+
+        function showFeedback(text, color) {
+          feedback.textContent = text;
+          feedback.style.color = color;
+          if (fbTimer) clearTimeout(fbTimer);
+          fbTimer = setTimeout(() => {
+            feedback.textContent = '';
+          }, 600);
+        }
+
+        function judgeText(diff) {
+          if (diff < 0.04) return 'PERFECT';
+          if (diff < 0.09) return 'GREAT';
+          if (diff < 0.14) return 'GOOD';
+          return 'OK';
+        }
+
+        function hitAtNow() {
+          if (!running || !audioCtx) return;
+
+          let bestId = null;
+          let bestDiff = Infinity;
+          let bestNote = null;
+
+          activeNotes.forEach((note, id) => {
+            const diff = Math.abs(audioCtx.currentTime - note.time);
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              bestId = id;
+              bestNote = note;
+            }
+          });
+
+          total++;
+
+          if (bestId && bestDiff <= 0.18) {
+            const accuracyBoost = Math.max(0, 1 - bestDiff / 0.18);
+            const gained = Math.round(120 * accuracyBoost + 40);
+            score += gained;
+            hits += 1;
+            combo += 1;
+            scoreEl.textContent = 'Score: ' + score;
+            comboEl.textContent = 'Combo: ' + combo;
+            updateAccuracy();
+            showFeedback(judgeText(bestDiff), '#ffd166');
+            bestNote.el.classList.add('hit');
+            bestNote.el.animate([
+              { transform: 'translateX(-50%) scale(1.15)' },
+              { transform: 'translateX(-50%) scale(0.9)' }
+            ], { duration: 220, easing: 'cubic-bezier(.2,.7,.2,1)' });
+            activeNotes.delete(bestId);
+            setTimeout(() => bestNote.el.remove(), 280);
+            playClick(audioCtx.currentTime, 1400, 0.02);
+          } else {
+            combo = 0;
+            comboEl.textContent = 'Combo: ' + combo;
+            updateAccuracy();
+            showFeedback('MISS', '#ff6b6b');
+            playClick(audioCtx.currentTime, 200, 0.06);
+          }
+        }
+
+        function startGame() {
+          if (running) return;
+          ensureAudio();
+          audioCtx.resume();
+          resetState();
+          startTime = audioCtx.currentTime + 0.2;
+          running = true;
+
+          beatmap.forEach((when) => {
+            playClick(startTime + when, (when % 0.5 === 0 ? 900 : 700), 0.06);
+          });
+
+          function loop() {
+            if (!running) return;
+            scheduleNotes();
+            updateNotes();
+            requestAnimationFrame(loop);
+          }
+
+          requestAnimationFrame(loop);
+        }
+
+        function stopGame() {
+          running = false;
+          activeNotes.forEach((note) => note.el.remove());
+          activeNotes.clear();
+          if (audioCtx) audioCtx.suspend();
+          feedback.textContent = '';
+        }
+
+        startBtn.addEventListener('click', startGame);
+        stopBtn.addEventListener('click', stopGame);
+        tapBtn.addEventListener('click', hitAtNow);
+        game.addEventListener('pointerdown', () => {
+          if (running) hitAtNow();
+        });
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            hitAtNow();
+          }
+        });
+      })();
+    </script>
   </body>
 </html>
