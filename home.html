@@ -55,6 +55,20 @@
         background: linear-gradient(90deg, var(--accent), var(--accent-2));
       }
 
+      .end-btn {
+        position: absolute;
+        top: 66px; /* below back button */
+        left: 14px;
+        z-index: 50;
+        padding: 8px 12px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 800;
+        color: #04130d;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.06);
+      }
+
       .scoreDisplay {
         position: absolute;
         top: 14px;
@@ -65,6 +79,8 @@
         font-weight: 800;
         color: var(--accent-2);
         background: rgba(255,255,255,0.04);
+        cursor: pointer;
+        user-select: none;
       }
 
       .playfield {
@@ -157,9 +173,21 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(2, 6, 23, 0.52);
-        z-index: 65;
+        background: rgba(2, 6, 23, 0.72);
+        z-index: 200;
       }
+
+      .summary {
+        background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+        padding: 20px 24px;
+        border-radius: 12px;
+        text-align: center;
+        min-width: 220px;
+      }
+
+      .summary h3 { margin: 0 0 10px 0; font-size: 1.1rem; }
+      .summary p { margin: 6px 0; color: var(--muted); }
+      .summary .big { font-weight: 900; color: var(--accent-2); font-size: 1.4rem; }
 
       .hidden { display: none; }
     </style>
@@ -167,6 +195,7 @@
   <body>
     <div class="page">
       <a class="back" href="index.html">Back</a>
+      <button class="end-btn" id="endBtn">End Level</button>
       <div class="scoreDisplay" id="scoreDisplay">Score: 0</div>
 
       <div class="playfield">
@@ -182,9 +211,21 @@
         <button class="btn" id="playBtn">Play</button>
       </div>
 
-      <div class="overlay hidden" id="gameOver">
-        <button class="btn" id="restartBtn">Restart</button>
+      <div class="overlay hidden" id="summaryOverlay">
+        <div class="summary" id="summaryContent">
+          <h3>Level Summary</h3>
+          <p>Score</p>
+          <div class="big" id="summaryScore">0</div>
+          <p>Time Played</p>
+          <div class="big" id="summaryTime">00:00</div>
+          <p>Best Score</p>
+          <div class="big" id="summaryBest">0</div>
+          <div style="margin-top:12px">
+            <button class="btn" id="summaryRestartBtn">Restart</button>
+          </div>
+        </div>
       </div>
+
     </div>
 
     <audio id="song" crossorigin="anonymous" preload="auto" style="display:none"></audio>
@@ -196,7 +237,12 @@
         const playBtn = document.getElementById('playBtn');
         const restartBtn = document.getElementById('restartBtn');
         const centerUi = document.getElementById('centerUi');
-        const gameOver = document.getElementById('gameOver');
+        const summaryOverlay = document.getElementById('summaryOverlay');
+        const summaryScore = document.getElementById('summaryScore');
+        const summaryTime = document.getElementById('summaryTime');
+        const summaryBest = document.getElementById('summaryBest');
+        const summaryRestartBtn = document.getElementById('summaryRestartBtn');
+        const endBtn = document.getElementById('endBtn');
         const scoreEl = document.getElementById('scoreDisplay');
 
         const songUrl = 'https://raw.githubusercontent.com/xevdvv/xevdvv.github.io/main/Mariah%20Deborah%20-%20Na%20Para%20Bang%20%28Official%20Lyric%20Visualizer%29.mp3';
@@ -214,13 +260,25 @@
         let nextIndex = 0;
         let rafId = null;
         let score = 0;
+        let bestScore = Number(localStorage.getItem('bestScore') || 0);
         let speedMultiplier = 1;
         let noteTravelTime = BASE_TRAVEL;
         let lastNoteId = 0;
         let holdState = { 0: false, 1: false, 2: false, 3: false };
 
+        // time played tracking
+        let runStartTime = 0; // seconds (performance.now()/1000)
+        let accumulatedPlayTime = 0; // seconds
+
         function clamp(value, min, max) {
           return Math.min(Math.max(value, min), max);
+        }
+
+        function formatTimeSec(sec) {
+          sec = Math.max(0, Math.floor(sec));
+          const m = Math.floor(sec / 60).toString().padStart(2, '0');
+          const s = (sec % 60).toString().padStart(2, '0');
+          return m + ':' + s;
         }
 
         function playTone(freq, duration = 0.05) {
@@ -347,6 +405,11 @@
 
         function awardPoints(amount) {
           score += amount;
+          // update best score if exceeded
+          if (score > bestScore) {
+            bestScore = score;
+            try { localStorage.setItem('bestScore', String(bestScore)); } catch (e) {}
+          }
           renderScore();
         }
 
@@ -445,18 +508,20 @@
             score = 0;
             speedMultiplier = 1;
             noteTravelTime = BASE_TRAVEL;
+            accumulatedPlayTime = 0;
+            runStartTime = performance.now() / 1000;
             renderScore();
+          } else {
+            // starting/continuing without resetting score: resume timer
+            runStartTime = performance.now() / 1000;
           }
 
           beatmap = buildBeatmap();
           nextIndex = 0;
           clearTiles();
-          gameOver.classList.add('hidden');
-          centerUi.classList.remove('hidden');
-          centerUi.querySelector('.btn').textContent = 'Starting...';
+          centerUi.classList.add('hidden');
 
           await countdown();
-          centerUi.classList.add('hidden');
 
           running = true;
           song.currentTime = 0;
@@ -464,33 +529,93 @@
           updateLoop();
         }
 
+        function endLevel() {
+          if (!running) {
+            // if already stopped, just show summary
+            showSummary();
+            return;
+          }
+          // stop the run and accumulate time
+          running = false;
+          try { cancelAnimationFrame(rafId); } catch (e) {}
+          try { song.pause(); } catch (e) {}
+          const now = performance.now() / 1000;
+          accumulatedPlayTime += Math.max(0, now - runStartTime);
+          showSummary();
+        }
+
+        function showSummary() {
+          // compute total time
+          let timeSec = accumulatedPlayTime;
+          if (running) {
+            const now = performance.now() / 1000;
+            timeSec += Math.max(0, now - runStartTime);
+          }
+
+          summaryScore.textContent = String(score);
+          summaryTime.textContent = formatTimeSec(timeSec);
+          summaryBest.textContent = String(bestScore || 0);
+
+          summaryOverlay.classList.remove('hidden');
+        }
+
+        function hideSummary() {
+          summaryOverlay.classList.add('hidden');
+        }
+
         // Endless behavior: when song ends, increase speed and continue immediately
         song.addEventListener('ended', () => {
           if (!running) return;
-          // increase speed gradually and restart
           increaseSpeedForNextLoop();
-          // prepare next loop
           beatmap = buildBeatmap();
           nextIndex = 0;
           clearTiles();
-          // set song to start and play again
-          try {
-            song.currentTime = 0;
-            song.play().catch(() => {});
-          } catch (e) {}
+          try { song.currentTime = 0; song.play().catch(() => {}); } catch (e) {}
         });
 
         playBtn.addEventListener('click', () => {
           prepareAndStartRun(true);
         });
 
-        restartBtn.addEventListener('click', () => {
-          gameOver.classList.add('hidden');
-          centerUi.classList.remove('hidden');
-          const button = centerUi.querySelector('.btn');
-          button.textContent = 'Play';
-          button.disabled = false;
+        // restart from overlay
+        summaryRestartBtn.addEventListener('click', async () => {
+          hideSummary();
+          // reset values and start fresh
+          accumulatedPlayTime = 0;
+          runStartTime = performance.now() / 1000;
+          await prepareAndStartRun(true);
+        });
+
+        endBtn.addEventListener('click', () => {
+          endLevel();
+        });
+
+        // show summary when tapping score
+        scoreEl.addEventListener('click', () => {
+          // pause run while viewing
+          if (running) {
+            const now = performance.now() / 1000;
+            accumulatedPlayTime += Math.max(0, now - runStartTime);
+            running = false;
+            try { cancelAnimationFrame(rafId); } catch (e) {}
+            try { song.pause(); } catch (e) {}
+          }
+          showSummary();
+        });
+
+        // close overlay when tapping background
+        summaryOverlay.addEventListener('click', (e) => {
+          if (e.target === summaryOverlay) {
+            hideSummary();
+          }
+        });
+
+        restartBtn && restartBtn.addEventListener('click', () => {
+          // restart main UI button behaviour
+          accumulatedPlayTime = 0;
+          runStartTime = performance.now() / 1000;
           prepareAndStartRun(true);
+          hideSummary();
         });
 
         document.addEventListener('pointerdown', (event) => {
