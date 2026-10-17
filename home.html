@@ -35,15 +35,12 @@
       h1 { margin:0; font-size: clamp(1.2rem, 2.2vw, 1.6rem); }
       p.lead { margin:0; color:var(--muted); }
 
-      /* Layout: main play area and HUD stacked on mobile */
       .layout { display:grid; grid-template-columns: 1fr 320px; gap:1rem; margin-top:1rem; }
       @media (max-width: 920px) { .layout { grid-template-columns: 1fr; } }
 
       .game-shell { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:0.6rem; border:1px solid rgba(255,255,255,0.03); }
-      /* Make the playfield responsive and touch-friendly */
       .game-canvas { position:relative; height: min(66vh, 640px); background: linear-gradient(180deg, rgba(0,0,0,0.12), transparent); overflow:hidden; border-radius:8px; border:1px solid rgba(255,255,255,0.02); display:flex; align-items:flex-start; }
 
-      /* Piano-tiles style: multiple vertical lanes across full width */
       .lanes { display:flex; width:100%; height:100%; }
       .lane { flex:1; position:relative; border-left:1px solid rgba(255,255,255,0.02); border-right:1px solid rgba(255,255,255,0.02); touch-action: manipulation; }
       .lane .hit-row { position:absolute; bottom:80px; left:0; right:0; height:8px; border-radius:999px; pointer-events:none; background:linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); }
@@ -67,15 +64,13 @@
       .feedback { position:absolute; left:50%; transform:translateX(-50%); bottom:140px; font-weight:900; font-size:1.4rem; color:var(--hit); text-shadow:0 8px 30px rgba(255,209,102,0.15); pointer-events:none; z-index:40; }
 
       footer { margin-top:0.6rem; color:var(--muted); font-size:0.9rem; }
+      .song-status { font-size:0.85rem; color:var(--muted); margin-top:0.5rem; }
 
-      /* Mobile large tappable indicators below the playfield */
       .mobile-controls { display:none; gap:6px; margin-top:8px; }
       .tap-pad { flex:1; height:56px; border-radius:10px; background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--muted); }
       @media (max-width: 920px) { .mobile-controls { display:flex; } .hud { order:2; } }
 
-      /* smaller note size on mobile for fit */
       @media (max-width: 520px) { .note { height:56px; } .note { font-size:0.95rem; } .feedback { font-size:1.1rem; bottom:120px; } }
-
     </style>
   </head>
   <body>
@@ -86,7 +81,7 @@
           <div class="header">
             <div>
               <h1 id="home-title">Project Sekai — Mobile Rhythm</h1>
-              <p class="lead">Piano-tiles style mobile-friendly mode while preserving the theme — tap lanes to hit notes. Use Space/Enter or tap on lanes.</p>
+              <p class="lead">Na Para Bang mode — piano-tiles style mobile-friendly rhythm with the song synced to the beat.</p>
             </div>
           </div>
         </div>
@@ -110,8 +105,10 @@
               <div class="tap-pad" data-index="3">Tap</div>
             </div>
 
+            <div class="song-status" id="songStatus">Song loaded: Na Para Bang</div>
+
             <footer>
-              <div class="muted">Controls: Space / Enter to hit (keys 1-4). Tap the lanes or use the pads below on mobile. Refresh to reset fully.</div>
+              <div class="muted">Controls: Space / Enter to hit (keys 1–4). Tap the lanes or use the pads below on mobile. Refresh to reset fully.</div>
             </footer>
           </div>
 
@@ -126,13 +123,15 @@
               <button class="btn" id="tapBtn">Tap</button>
             </div>
 
-            <div class="muted">Song: Demo Beat — generated. Note speed and timings are tuned for demo play. Refresh to reset fully.</div>
+            <div class="muted">Song: Mariah Deborah — Na Para Bang</div>
 
-            <div style="margin-top:8px; color:var(--muted); font-size:0.9rem;">Mobile-friendly piano-tiles layout with four lanes — larger tap areas and adaptive sizing.</div>
+            <div style="margin-top:8px; color:var(--muted); font-size:0.9rem;">The level is tuned to the actual audio track and synced to beat timing.</div>
           </aside>
         </div>
       </section>
     </main>
+
+    <audio id="song" preload="auto" crossorigin="anonymous" style="display:none"></audio>
 
     <script>
       (function(){
@@ -146,184 +145,308 @@
         const accEl = document.getElementById('accuracy');
         const feedback = document.getElementById('feedback');
         const mobilePads = document.getElementById('mobilePads');
+        const songStatus = document.getElementById('songStatus');
+        const song = document.getElementById('song');
 
-        // configuration
+        const songUrl = 'https://raw.githubusercontent.com/xevdvv/xevdvv.github.io/main/Mariah%20Deborah%20-%20Na%20Para%20Bang%20%28Official%20Lyric%20Visualizer%29.mp3';
         const LANES = 4;
-        const BPM = 120;
-        const beatInterval = 60 / BPM;
-        const noteTravelTime = 1.6; // shorter for piano-tiles feel
-        const noteSpawnTop = -120; // spawn above view
-
-        // generate a demo beatmap and lane assignment
-        const beatmap = []; // each: {t, lane}
-        for (let i = 0; i < 48; i++) {
-          const t = i * beatInterval + ((i%3===0)?0.25:0);
-          const lane = i % LANES; // simple pattern; you can randomize
-          beatmap.push({t, lane});
-        }
+        const noteTravelTime = 1.55;
+        const noteSpawnTop = -120;
 
         let audioCtx = null;
-        let startTime = null;
+        let analyser = null;
+        let sourceNode = null;
         let running = false;
-        let activeNotes = []; // {id, el, time, lane}
+        let activeNotes = [];
         let nextIndex = 0;
-
-        // scoring
         let score = 0, combo = 0, hits = 0, total = 0;
         let fbTimer = null;
+        let beatTimes = [];
+        let beatDetectionEnabled = false;
+        let beatDetectionLoop = null;
 
-        function ensureAudio(){ if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function initSong(){
+          song.src = songUrl;
+          song.crossOrigin = 'anonymous';
+          song.preload = 'auto';
+          song.loop = false;
+        }
 
-        function playClick(time, freq=1000, length=0.04){
-          ensureAudio();
-          const o = audioCtx.createOscillator();
-          const g = audioCtx.createGain();
-          o.type='sine'; o.frequency.value = freq;
-          g.gain.setValueAtTime(0.001, time);
-          g.gain.exponentialRampToValueAtTime(0.06, time + 0.01);
-          g.gain.exponentialRampToValueAtTime(0.001, time + length);
-          o.connect(g); g.connect(audioCtx.destination);
-          o.start(time); o.stop(time + length + 0.02);
+        function initAudioGraph(){
+          if (audioCtx) return;
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          sourceNode = audioCtx.createMediaElementSource(song);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 2048;
+          sourceNode.connect(analyser);
+          analyser.connect(audioCtx.destination);
+        }
+
+        function playTone(freq = 1000, duration = 0.04, volume = 0.06){
+          if (!audioCtx) return;
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(volume, audioCtx.currentTime + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration + 0.02);
         }
 
         function resetState(){
-          score = 0; combo = 0; hits = 0; total = 0; nextIndex = 0; activeNotes.forEach(n=>n.el.remove()); activeNotes = [];
+          score = 0; combo = 0; hits = 0; total = 0; nextIndex = 0; activeNotes.forEach(n => n.el.remove()); activeNotes = [];
           scoreEl.textContent = 'Score: 0'; comboEl.textContent = 'Combo: 0'; accEl.textContent = 'Accuracy: 100%'; feedback.textContent='';
         }
 
-        function laneElement(i){ return lanesEl.querySelector('.lane[data-index="'+i+'"]'); }
+        function laneElement(i){
+          return lanesEl.querySelector('.lane[data-index="' + i + '"]');
+        }
 
-        function createNoteObject(index, spawnAtAbsTime, lane){
-          const laneEl = laneElement(lane);
-          const el = document.createElement('div');
-          el.className = 'note p' + ((lane%4)+1);
-          el.dataset.id = 'n'+index;
-          el.dataset.lane = lane;
-          el.textContent = '';
-          el.style.top = noteSpawnTop + 'px';
-          // position within lane: use absolute inside lane
-          laneEl.appendChild(el);
-          activeNotes.push({id:'n'+index, el, time: spawnAtAbsTime + noteTravelTime, lane});
+        function buildFallbackBeatmap(){
+          const list = [];
+          const tempoSeconds = 0.5; // rough fallback if detection fails
+          for (let i = 0; i < 52; i++) {
+            list.push({ t: i * tempoSeconds + 0.4, lane: i % LANES });
+          }
+          return list;
+        }
+
+        function buildSongBeatmap(){
+          if (beatTimes.length >= 8) {
+            return beatTimes.map((t, i) => ({ t: t + 0.05, lane: (i + Math.floor(i / 2)) % LANES }));
+          }
+          return buildFallbackBeatmap();
         }
 
         function scheduleNotes(){
-          if (!running || !audioCtx) return;
-          const now = audioCtx.currentTime;
-          while(nextIndex < beatmap.length){
-            const item = beatmap[nextIndex];
-            const noteTimeAbs = startTime + item.t; // absolute time when it should be hit
-            const spawnTime = noteTimeAbs - noteTravelTime;
-            if (spawnTime <= now + 0.9){
-              createNoteObject(nextIndex, spawnTime, item.lane);
+          if (!running || !song || !audioCtx) return;
+          const current = song.currentTime;
+          const map = buildSongBeatmap();
+          while (nextIndex < map.length) {
+            const note = map[nextIndex];
+            if (note.t <= current + 1.2) {
+              const el = document.createElement('div');
+              el.className = 'note p' + (note.lane + 1);
+              el.dataset.id = 'note-' + nextIndex;
+              el.dataset.lane = note.lane;
+              laneElement(note.lane).appendChild(el);
+              activeNotes.push({ id: 'note-' + nextIndex, el, time: note.t, lane: note.lane });
               nextIndex++;
-            } else break;
-          }
-        }
-
-        function getLaneHitY(lane){
-          const laneEl = laneElement(lane);
-          const rect = laneEl.getBoundingClientRect();
-          // hit row is bottom:80px from container
-          const containerRect = game.getBoundingClientRect();
-          return containerRect.height - 80 - (containerRect.top - rect.top);
-        }
-
-        function updateNotes(){
-          if (!running || !audioCtx) return;
-          const now = audioCtx.currentTime;
-          const containerRect = game.getBoundingClientRect();
-
-          for (let i = activeNotes.length-1; i>=0; i--){
-            const note = activeNotes[i];
-            const laneEl = laneElement(note.lane);
-            const laneRect = laneEl.getBoundingClientRect();
-            const hitY = laneRect.height - 80; // within lane coords
-            const progress = (now - (note.time - noteTravelTime)) / noteTravelTime; // 0..1
-            const y = progress * (hitY - noteSpawnTop) + noteSpawnTop;
-            note.el.style.transform = 'translateY('+ y + 'px)';
-
-            if (progress > 1.3){
-              // miss -> remove
-              note.el.classList.add('miss');
-              note.el.remove();
-              activeNotes.splice(i,1);
-              combo = 0; comboEl.textContent='Combo: '+combo; total++; updateAccuracy(); showFeedback('MISS','#ff6b6b');
+            } else {
+              break;
             }
           }
         }
 
-        function updateAccuracy(){ const acc = total===0?100:Math.round((hits/total)*100); accEl.textContent='Accuracy: '+acc+'%'; }
+        function updateNotes(){
+          if (!running || !song) return;
+          const current = song.currentTime;
+          for (let i = activeNotes.length - 1; i >= 0; i--) {
+            const note = activeNotes[i];
+            const lane = laneElement(note.lane);
+            const laneRect = lane.getBoundingClientRect();
+            const hitY = laneRect.height - 80;
+            const progress = (current - (note.time - noteTravelTime)) / noteTravelTime;
+            const y = progress * (hitY - noteSpawnTop) + noteSpawnTop;
+            note.el.style.transform = 'translateY(' + y + 'px)';
 
-        function judgeText(diff){ if (diff < 0.05) return 'PERFECT'; if (diff < 0.09) return 'GREAT'; if (diff < 0.14) return 'GOOD'; return 'OK'; }
+            if (progress > 1.25) {
+              note.el.classList.add('miss');
+              note.el.remove();
+              activeNotes.splice(i, 1);
+              combo = 0;
+              comboEl.textContent = 'Combo: ' + combo;
+              total++;
+              updateAccuracy();
+              showFeedback('MISS', '#ff6b6b');
+            }
+          }
+        }
 
-        let lastTapLane = null;
+        function updateAccuracy(){
+          const acc = total === 0 ? 100 : Math.round((hits / total) * 100);
+          accEl.textContent = 'Accuracy: ' + acc + '%';
+        }
+
+        function judgeText(diff){
+          if (diff < 0.045) return 'PERFECT';
+          if (diff < 0.09) return 'GREAT';
+          if (diff < 0.15) return 'GOOD';
+          return 'OK';
+        }
+
+        function showFeedback(text, color){
+          feedback.textContent = text;
+          feedback.style.color = color;
+          if (fbTimer) clearTimeout(fbTimer);
+          fbTimer = setTimeout(() => { feedback.textContent = ''; }, 600);
+        }
+
         function hitLaneAtNow(lane){
-          if (!running || !audioCtx) return;
-          let bestIdx = -1; let bestDiff = Infinity; let bestNote = null;
-          for (let i=0;i<activeNotes.length;i++){
+          if (!running || !song || !audioCtx) return;
+          let bestIdx = -1;
+          let bestDiff = Infinity;
+          let bestNote = null;
+
+          for (let i = 0; i < activeNotes.length; i++) {
             const n = activeNotes[i];
             if (n.lane !== lane) continue;
-            const diff = Math.abs(audioCtx.currentTime - n.time);
-            if (diff < bestDiff){ bestDiff = diff; bestIdx = i; bestNote = n; }
+            const diff = Math.abs(song.currentTime - n.time);
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              bestIdx = i;
+              bestNote = n;
+            }
           }
+
           total++;
-          if (bestIdx !== -1 && bestDiff <= 0.2){
-            const accuracyBoost = Math.max(0, 1 - bestDiff/0.2);
+
+          if (bestIdx !== -1 && bestDiff <= 0.2) {
+            const accuracyBoost = Math.max(0, 1 - bestDiff / 0.2);
             const gained = Math.round(120 * accuracyBoost + 40);
-            score += gained; hits++; combo++;
-            scoreEl.textContent='Score: '+score; comboEl.textContent='Combo: '+combo; updateAccuracy();
-            showFeedback(judgeText(bestDiff),'#ffd166');
+            score += gained;
+            hits++;
+            combo++;
+            scoreEl.textContent = 'Score: ' + score;
+            comboEl.textContent = 'Combo: ' + combo;
+            updateAccuracy();
+            showFeedback(judgeText(bestDiff), '#ffd166');
             bestNote.el.classList.add('hit');
             bestNote.el.remove();
-            activeNotes.splice(bestIdx,1);
-            playClick(audioCtx.currentTime, 1400, 0.02);
+            activeNotes.splice(bestIdx, 1);
+            playTone(1400, 0.02, 0.05);
           } else {
-            combo = 0; comboEl.textContent='Combo: '+combo; updateAccuracy(); showFeedback('MISS','#ff6b6b'); playClick(audioCtx.currentTime,200,0.06);
+            combo = 0;
+            comboEl.textContent = 'Combo: ' + combo;
+            updateAccuracy();
+            showFeedback('MISS', '#ff6b6b');
+            playTone(200, 0.06, 0.05);
           }
         }
 
-        function showFeedback(text,color){ feedback.textContent=text; feedback.style.color=color; if (fbTimer) clearTimeout(fbTimer); fbTimer=setTimeout(()=>feedback.textContent='',600); }
+        function detectBeats(){
+          if (!analyser || beatDetectionEnabled) return;
+          beatDetectionEnabled = true;
 
-        function startGame(){ if (running) return; ensureAudio(); audioCtx.resume(); resetState(); startTime = audioCtx.currentTime + 0.15; running=true;
-          // play reference clicks
-          beatmap.forEach((b)=> playClick(startTime + b.t, (b.t % 0.5 === 0 ? 900:700), 0.06));
-          function loop(){ if (!running) return; scheduleNotes(); updateNotes(); requestAnimationFrame(loop); }
-          requestAnimationFrame(loop);
+          const buffer = new Uint8Array(analyser.fftSize);
+          let lastEnergy = 0;
+          let lastBeatTime = -999;
+          let hadAudio = false;
+
+          function tick(){
+            if (!running || !analyser) return;
+
+            analyser.getByteTimeDomainData(buffer);
+            let sum = 0;
+            for (let i = 0; i < buffer.length; i++) {
+              const v = (buffer[i] - 128) / 128;
+              sum += v * v;
+            }
+            const rms = Math.sqrt(sum / buffer.length);
+            const energy = rms * 220;
+            const threshold = 0.18 + Math.max(0, lastEnergy * 0.55);
+
+            if (energy > threshold && song.currentTime - lastBeatTime > 0.28 && song.currentTime > 0.6) {
+              beatTimes.push(song.currentTime);
+              lastBeatTime = song.currentTime;
+            }
+
+            lastEnergy = energy * 0.85 + lastEnergy * 0.15;
+            hadAudio = true;
+            beatDetectionLoop = requestAnimationFrame(tick);
+          }
+
+          tick();
         }
 
-        function stopGame(){ running=false; activeNotes.forEach(n=>n.el.remove()); activeNotes=[]; if (audioCtx) audioCtx.suspend(); feedback.textContent=''; }
+        function stopGame(){
+          running = false;
+          if (song) song.pause();
+          if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
+          activeNotes.forEach(n => n.el.remove());
+          activeNotes = [];
+          feedback.textContent = '';
+          if (beatDetectionLoop) {
+            cancelAnimationFrame(beatDetectionLoop);
+            beatDetectionLoop = null;
+          }
+        }
 
-        // Input handlers: keyboard 1-4 and Space to tap nearest lane (center)
-        window.addEventListener('keydown',(e)=>{
-          if (e.code==='Space'){ e.preventDefault(); hitLaneAtNow(Math.floor(LANES/2)); }
-          if (e.key >= '1' && e.key <= String(LANES)) { hitLaneAtNow(Number(e.key)-1); }
-          if (e.code==='KeyR') { stopGame(); startGame(); }
+        function startGame(){
+          if (running) return;
+          initSong();
+          initAudioGraph();
+          audioCtx.resume();
+          resetState();
+          beatTimes = [];
+          nextIndex = 0;
+          running = true;
+
+          song.currentTime = 0;
+          song.play().then(() => {
+            songStatus.textContent = 'Song playing: Na Para Bang';
+            detectBeats();
+          }).catch(() => {
+            songStatus.textContent = 'Audio blocked until interaction is allowed';
+          });
+
+          function frame(){
+            if (!running) return;
+            scheduleNotes();
+            updateNotes();
+            requestAnimationFrame(frame);
+          }
+
+          requestAnimationFrame(frame);
+        }
+
+        song.addEventListener('ended', () => {
+          stopGame();
+          songStatus.textContent = 'Song loaded: Na Para Bang';
         });
 
-        // Pointer/touch: detect lane by hit target
-        lanesEl.addEventListener('pointerdown',(e)=>{
-          const laneEl = e.target.closest('.lane'); if (!laneEl) return;
-          const lane = Number(laneEl.dataset.index); hitLaneAtNow(lane);
-        }, {passive:true});
-
-        // Mobile pads
-        mobilePads.querySelectorAll('.tap-pad').forEach(p=>{
-          p.addEventListener('pointerdown',(e)=>{ const lane=Number(p.dataset.index); hitLaneAtNow(lane); }, {passive:true});
-        });
-
-        // Buttons
+        // Inputs
         startBtn.addEventListener('click', startGame);
         stopBtn.addEventListener('click', stopGame);
-        tapBtn.addEventListener('click', ()=>{ hitLaneAtNow(Math.floor(LANES/2)); });
+        tapBtn.addEventListener('click', () => hitLaneAtNow(Math.floor(LANES / 2)));
 
-        // Resize: ensure mobile pads visibility
-        function checkMobile(){ if (window.innerWidth <= 920) { mobilePads.setAttribute('aria-hidden','false'); } else { mobilePads.setAttribute('aria-hidden','true'); } }
+        lanesEl.addEventListener('pointerdown', (e) => {
+          const laneEl = e.target.closest('.lane');
+          if (!laneEl) return;
+          hitLaneAtNow(Number(laneEl.dataset.index));
+        }, { passive: true });
+
+        mobilePads.querySelectorAll('.tap-pad').forEach((pad) => {
+          pad.addEventListener('pointerdown', () => {
+            hitLaneAtNow(Number(pad.dataset.index));
+          }, { passive: true });
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            hitLaneAtNow(Math.floor(LANES / 2));
+          }
+          if (e.key >= '1' && e.key <= String(LANES)) {
+            hitLaneAtNow(Number(e.key) - 1);
+          }
+          if (e.code === 'KeyR') {
+            stopGame();
+            startGame();
+          }
+        });
+
+        function checkMobile(){
+          mobilePads.setAttribute('aria-hidden', window.innerWidth <= 920 ? 'false' : 'true');
+        }
+
         window.addEventListener('resize', checkMobile);
         checkMobile();
-
-        // initial setup: ensure lanes have relative positioning for notes
-        // nothing else needed; notes are appended into lanes
-
+        initSong();
       })();
     </script>
   </body>
