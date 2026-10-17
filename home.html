@@ -55,9 +55,6 @@
         background: linear-gradient(90deg, var(--accent), var(--accent-2));
       }
 
-      /* lives hidden since life mechanic removed */
-      .lives { display: none; }
-
       .scoreDisplay {
         position: absolute;
         top: 14px;
@@ -170,7 +167,6 @@
   <body>
     <div class="page">
       <a class="back" href="index.html">Back</a>
-      <div class="lives" id="lives"></div>
       <div class="scoreDisplay" id="scoreDisplay">Score: 0</div>
 
       <div class="playfield">
@@ -201,14 +197,13 @@
         const restartBtn = document.getElementById('restartBtn');
         const centerUi = document.getElementById('centerUi');
         const gameOver = document.getElementById('gameOver');
-        const livesEl = document.getElementById('lives'); // hidden now
         const scoreEl = document.getElementById('scoreDisplay');
 
         const songUrl = 'https://raw.githubusercontent.com/xevdvv/xevdvv.github.io/main/Mariah%20Deborah%20-%20Na%20Para%20Bang%20%28Official%20Lyric%20Visualizer%29.mp3';
 
         const HIT_WINDOW = 0.22;
         const MISS_WINDOW = 0.34;
-        const BASE_TRAVEL = 3.2; // increased to slow down notes
+        const BASE_TRAVEL = 2.6; // base travel time (seconds) - lower = faster
         const MAX_SPEED = 8;
         const HOLD_START_PROGRESS = 0.55;
 
@@ -244,7 +239,7 @@
         }
 
         function renderScore() {
-          scoreEl.textContent = 'Score: ' + score + (speedMultiplier > 1 ? '  x' + speedMultiplier : '');
+          scoreEl.textContent = 'Score: ' + score + (speedMultiplier > 1 ? '  x' + speedMultiplier.toFixed(2) : '');
         }
 
         function setSong() {
@@ -344,7 +339,7 @@
             if (progress > 1.25 && !item.hit) {
               item.el.classList.add('miss');
               removeNote(item);
-              // life removed: just play a miss sound and continue
+              // endless mode: just play miss sound, no life penalty
               playTone(220, 0.06);
             }
           }
@@ -355,10 +350,9 @@
           renderScore();
         }
 
-        function cycleSpeed() {
-          speedMultiplier = Math.min(MAX_SPEED, speedMultiplier * 2);
+        function increaseSpeedForNextLoop() {
+          speedMultiplier = Math.min(MAX_SPEED, speedMultiplier + 0.25);
           noteTravelTime = BASE_TRAVEL / speedMultiplier;
-          renderScore();
         }
 
         function handleLaneHit(laneIndex) {
@@ -413,7 +407,6 @@
             } else {
               item.el.classList.add('miss');
               removeNote(item);
-              // life removed: just play miss sound
               playTone(220, 0.06);
             }
             item.holding = false;
@@ -471,34 +464,20 @@
           updateLoop();
         }
 
-        function nextRound() {
+        // Endless behavior: when song ends, increase speed and continue immediately
+        song.addEventListener('ended', () => {
           if (!running) return;
-          running = false;
-          if (rafId) cancelAnimationFrame(rafId);
+          // increase speed gradually and restart
+          increaseSpeedForNextLoop();
+          // prepare next loop
+          beatmap = buildBeatmap();
+          nextIndex = 0;
           clearTiles();
-
-          // life removed: always cycle speed and continue to next round
-          cycleSpeed();
-          centerUi.classList.remove('hidden');
-          const button = centerUi.querySelector('.btn');
-          button.textContent = 'Speed x' + speedMultiplier;
-          button.disabled = true;
-
-          setTimeout(async () => {
-            await countdown();
-            centerUi.classList.add('hidden');
-            beatmap = buildBeatmap();
-            nextIndex = 0;
-            clearTiles();
-            running = true;
+          // set song to start and play again
+          try {
             song.currentTime = 0;
             song.play().catch(() => {});
-            updateLoop();
-          }, 300);
-        }
-
-        song.addEventListener('ended', () => {
-          if (running) nextRound();
+          } catch (e) {}
         });
 
         playBtn.addEventListener('click', () => {
